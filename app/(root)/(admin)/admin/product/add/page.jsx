@@ -15,6 +15,7 @@ import axios from 'axios'
 import useFetch from '@/hooks/useFetch'
 import Select from '@/components/Application/Select'
 import Editor from '@/components/Application/Admin/Editor'
+import VariantConfigEditor from '@/components/Application/Admin/VariantConfigEditor'
 import MediaModal from '@/components/Application/Admin/MediaModal'
 import Image from 'next/image'
 const breadcrumbData = [
@@ -43,11 +44,13 @@ const AddProduct = () => {
   const formSchema = zSchema.pick({
     name: true,
     slug: true,
+    barcode: true,
     category: true,
     mrp: true,
     sellingPrice: true,
     discountPercentage: true,
     description: true,
+    variantConfig: true,
   })
 
   const form = useForm({
@@ -55,11 +58,13 @@ const AddProduct = () => {
     defaultValues: {
       name: "",
       slug: "",
+      barcode: "",
       category: "",
       mrp: 0,
       sellingPrice: 0,
       discountPercentage: 0,
       description: "",
+      variantConfig: { attributes: [] },
     },
   })
 
@@ -159,6 +164,21 @@ const AddProduct = () => {
                 <div className=''>
                   <FormField
                     control={form.control}
+                    name="barcode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Barcode</FormLabel>
+                        <FormControl>
+                          <Input type="text" placeholder="Scan or enter barcode" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className=''>
+                  <FormField
+                    control={form.control}
                     name="category"
                     render={({ field }) => (
                       <FormItem>
@@ -225,6 +245,24 @@ const AddProduct = () => {
                   <FormLabel className="mb-2">Description <span className='text-red-500'>*</span></FormLabel>
                   <Editor onChange={editor} />
                   <FormMessage></FormMessage>
+                </div>
+                <div className='md:col-span-2'>
+                  <FormField
+                    control={form.control}
+                    name="variantConfig"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Variant Configuration</FormLabel>
+                        <FormControl>
+                          <VariantConfigEditor
+                            value={field.value?.attributes || []}
+                            onChange={(attrs) => field.onChange({ ...(field.value || {}), attributes: attrs })}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
               </div>

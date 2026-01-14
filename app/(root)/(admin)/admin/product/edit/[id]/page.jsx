@@ -15,6 +15,7 @@ import axios from 'axios'
 import useFetch from '@/hooks/useFetch'
 import Select from '@/components/Application/Select'
 import Editor from '@/components/Application/Admin/Editor'
+import VariantConfigEditor from '@/components/Application/Admin/VariantConfigEditor'
 import MediaModal from '@/components/Application/Admin/MediaModal'
 import Image from 'next/image'
 const breadcrumbData = [
@@ -50,11 +51,13 @@ const EditProduct = ({ params }) => {
     _id: true,
     name: true,
     slug: true,
+    barcode: true,
     category: true,
     mrp: true,
     sellingPrice: true,
     discountPercentage: true,
     description: true,
+    variantConfig: true,
   })
 
   const form = useForm({
@@ -63,14 +66,15 @@ const EditProduct = ({ params }) => {
       _id: id,
       name: "",
       slug: "",
+      barcode: "",
       category: "",
       mrp: 0,
       sellingPrice: 0,
       discountPercentage: 0,
       description: "",
+      variantConfig: { attributes: [] },
     },
   })
-
 
   useEffect(() => {
     if (getProduct && getProduct.success) {
@@ -79,11 +83,13 @@ const EditProduct = ({ params }) => {
         _id: product?._id,
         name: product?.name,
         slug: product?.slug,
+        barcode: product?.barcode || "",
         category: product?.category,
         mrp: product?.mrp,
         sellingPrice: product?.sellingPrice,
         discountPercentage: product?.discountPercentage,
         description: product?.description,
+        variantConfig: product?.variantConfig || { attributes: [] },
       })
 
       if (product.media) {
@@ -190,6 +196,21 @@ const EditProduct = ({ params }) => {
                 <div className=''>
                   <FormField
                     control={form.control}
+                    name="barcode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Barcode</FormLabel>
+                        <FormControl>
+                          <Input type="text" placeholder="Scan or enter barcode" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className=''>
+                  <FormField
+                    control={form.control}
                     name="category"
                     render={({ field }) => (
                       <FormItem>
@@ -258,6 +279,25 @@ const EditProduct = ({ params }) => {
                     <Editor onChange={editor} initialData={form.getValues('description')} />
                   }
                   <FormMessage></FormMessage>
+                </div>
+
+                <div className='md:col-span-2'>
+                  <FormField
+                    control={form.control}
+                    name="variantConfig"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Variant Configuration</FormLabel>
+                        <FormControl>
+                          <VariantConfigEditor
+                            value={field.value?.attributes || []}
+                            onChange={(attrs) => field.onChange({ ...(field.value || {}), attributes: attrs })}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
               </div>

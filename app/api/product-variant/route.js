@@ -1,6 +1,6 @@
 import { isAuthenticated } from "@/lib/authentication"
 import { connectDB } from "@/lib/databaseConnection"
-import { catchError } from "@/lib/helperFunction"
+import { catchError, response } from "@/lib/helperFunction"
 import ProductVariantModel from "@/models/ProductVariant.model"
 
 import { NextResponse } from "next/server"
@@ -37,6 +37,9 @@ export async function GET(request) {
         if (globalFilter) {
             matchQuery["$or"] = [
                 { sku: { $regex: globalFilter, $options: 'i' } },
+                { barcode: { $regex: globalFilter, $options: 'i' } },
+                { name: { $regex: globalFilter, $options: 'i' } },
+                { variantName: { $regex: globalFilter, $options: 'i' } },
                 { "productData.name": { $regex: globalFilter, $options: 'i' } },
                 {
                     $expr: {
@@ -104,15 +107,16 @@ export async function GET(request) {
                     path: "$productData", preserveNullAndEmptyArrays: true
                 }
             },
-            { $match: matchQuery },
-            { $sort: Object.keys(sortQuery).length ? sortQuery : { createdAt: -1 } },
-            { $skip: start },
-            { $limit: size },
             {
                 $addFields: {
-                    variantName: {
+                    product: "$productData.name",
+                }
+            },
+            {
+                $addFields: {
+                    variantNameGenerated: {
                         $reduce: {
-                            input: { $objectToArray: "$attributes" },
+                            input: { $objectToArray: { $ifNull: ["$attributes", {}] } },
                             initialValue: "",
                             in: {
                                 $concat: [
@@ -126,9 +130,29 @@ export async function GET(request) {
                 }
             },
             {
+                $addFields: {
+                    variantName: {
+                        $cond: [
+                            {
+                                $and: [
+                                    { $ne: ["$name", null] },
+                                    { $ne: ["$name", ""] }
+                                ]
+                            },
+                            "$name",
+                            "$variantNameGenerated"
+                        ]
+                    }
+                }
+            },
+            { $match: matchQuery },
+            { $sort: Object.keys(sortQuery).length ? sortQuery : { createdAt: -1 } },
+            { $skip: start },
+            { $limit: size },
+            {
                 $project: {
                     _id: 1,
-                    product: "$productData.name",
+                    product: 1,
                     variantName: 1,
                     sku: 1,
                     mrp: 1,
@@ -145,8 +169,59 @@ export async function GET(request) {
 
         const getProductVariant = await ProductVariantModel.aggregate(aggregatePipeline)
 
-        // Get totalRowCount  
-        const totalRowCount = await ProductVariantModel.countDocuments(matchQuery)
+        // Get totalRowCount (needs same lookup/match as aggregatePipeline)
+        const totalCountPipeline = [
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: 'product',
+                    foreignField: '_id',
+                    as: 'productData'
+                }
+            },
+            {
+                $unwind: {
+                    path: "$productData", preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $addFields: {
+                    variantNameGenerated: {
+                        $reduce: {
+                            input: { $objectToArray: { $ifNull: ["$attributes", {}] } },
+                            initialValue: "",
+                            in: {
+                                $concat: [
+                                    "$$value",
+                                    { $cond: [{ $eq: ["$$value", ""] }, "", " / "] },
+                                    "$$this.v"
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $addFields: {
+                    variantName: {
+                        $cond: [
+                            {
+                                $and: [
+                                    { $ne: ["$name", null] },
+                                    { $ne: ["$name", ""] }
+                                ]
+                            },
+                            "$name",
+                            "$variantNameGenerated"
+                        ]
+                    }
+                }
+            },
+            { $match: matchQuery },
+            { $count: 'total' }
+        ]
+        const totalCountResult = await ProductVariantModel.aggregate(totalCountPipeline)
+        const totalRowCount = totalCountResult?.[0]?.total || 0
 
         return NextResponse.json({
             success: true,

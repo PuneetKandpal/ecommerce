@@ -6,7 +6,19 @@ const ProductVariantSchema = new mongoose.Schema({
         ref: "Product",
         required: true,
     },
-    
+
+    name: {
+        type: String,
+        trim: true,
+        default: null,
+    },
+    barcode: {
+        type: String,
+        trim: true,
+        unique: true,
+        sparse: true,
+    },
+
     // Flexible attributes using Map - supports any key-value pairs
     attributes: {
         type: Map,

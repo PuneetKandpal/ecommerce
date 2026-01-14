@@ -1,6 +1,6 @@
 import { isAuthenticated } from "@/lib/authentication"
 import { connectDB } from "@/lib/databaseConnection"
-import { catchError } from "@/lib/helperFunction"
+import { catchError, response } from "@/lib/helperFunction"
 import ProductModel from "@/models/Product.model"
 import { NextResponse } from "next/server"
 
@@ -37,6 +37,7 @@ export async function GET(request) {
             matchQuery["$or"] = [
                 { name: { $regex: globalFilter, $options: 'i' } },
                 { slug: { $regex: globalFilter, $options: 'i' } },
+                { barcode: { $regex: globalFilter, $options: 'i' } },
                 { "categoryData.name": { $regex: globalFilter, $options: 'i' } },
                 {
                     $expr: {
@@ -125,8 +126,26 @@ export async function GET(request) {
 
         const getProduct = await ProductModel.aggregate(aggregatePipeline)
 
-        // Get totalRowCount  
-        const totalRowCount = await ProductModel.countDocuments(matchQuery)
+        // Get totalRowCount (needs same lookup/match as aggregatePipeline)
+        const totalCountPipeline = [
+            {
+                $lookup: {
+                    from: 'categories',
+                    localField: 'category',
+                    foreignField: '_id',
+                    as: 'categoryData'
+                }
+            },
+            {
+                $unwind: {
+                    path: "$categoryData", preserveNullAndEmptyArrays: true
+                }
+            },
+            { $match: matchQuery },
+            { $count: 'total' }
+        ]
+        const totalCountResult = await ProductModel.aggregate(totalCountPipeline)
+        const totalRowCount = totalCountResult?.[0]?.total || 0
 
         return NextResponse.json({
             success: true,

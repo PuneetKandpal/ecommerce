@@ -6,6 +6,12 @@ const productSchema = new mongoose.Schema({
         required: true,
         trim: true,
     },
+    barcode: {
+        type: String,
+        trim: true,
+        unique: true,
+        sparse: true,
+    },
     slug: {
         type: String,
         required: true,
@@ -48,6 +54,7 @@ const productSchema = new mongoose.Schema({
             {
                 key: { type: String },
                 label: { type: String },
+                required: { type: Boolean, default: true },
                 unit: { type: String },
                 type: { type: String, enum: ['text', 'number', 'select'], default: 'text' },
                 options: [{ type: String }]

@@ -28,6 +28,8 @@ export async function POST(request) {
 
         const newProductVariant = new ProductVariantModel({
             product: payload.product,
+            name: typeof payload.name === 'string' && payload.name.trim() ? payload.name.trim() : undefined,
+            barcode: typeof payload.barcode === 'string' && payload.barcode.trim() ? payload.barcode.trim() : undefined,
             attributes: payload.attributes,
             sku: payload.sku,
             mrp: Number(payload.mrp),

@@ -31,6 +31,8 @@ const AddProduct = () => {
   const form = useForm({
     defaultValues: {
       product: "",
+      name: "",
+      barcode: "",
       sku: "",
       mrp: "",
       sellingPrice: "",

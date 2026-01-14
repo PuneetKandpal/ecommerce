@@ -9,11 +9,17 @@ import Image from 'next/image'
 import { showToast } from '@/lib/showToast'
 import axios from 'axios'
 
-const DynamicVariantForm = ({ form, onSubmit, loading, productOption, selectedProductId }) => {
+const DynamicVariantForm = ({ form, onSubmit, loading, productOption, selectedProductId, initialMedia = [], submitText = 'Save Product Variant' }) => {
     const [selectedMedia, setSelectedMedia] = useState([])
     const [open, setOpen] = useState(false)
     const [productConfig, setProductConfig] = useState(null)
     const [loadingConfig, setLoadingConfig] = useState(false)
+
+    useEffect(() => {
+        if (Array.isArray(initialMedia) && initialMedia.length > 0) {
+            setSelectedMedia(initialMedia)
+        }
+    }, [initialMedia])
 
     // Fetch product config when product is selected
     useEffect(() => {
@@ -59,8 +65,12 @@ const DynamicVariantForm = ({ form, onSubmit, loading, productOption, selectedPr
         const attributes = {}
         if (productConfig?.variantConfig?.attributes) {
             productConfig.variantConfig.attributes.forEach(attr => {
+                const isRequired = attr?.required !== false
                 const value = values[`attr_${attr.key}`]
-                if (value) {
+                if (isRequired && (value === undefined || value === null || String(value).trim() === '')) {
+                    throw new Error(`${attr.label} is required`)
+                }
+                if (value !== undefined && value !== null && String(value).trim() !== '') {
                     attributes[attr.key] = value
                 }
             })
@@ -68,7 +78,10 @@ const DynamicVariantForm = ({ form, onSubmit, loading, productOption, selectedPr
 
         const mediaIds = selectedMedia.map(media => media._id)
         const payload = {
+            _id: values._id,
             product: values.product,
+            name: values.name,
+            barcode: values.barcode,
             sku: values.sku,
             mrp: values.mrp,
             sellingPrice: values.sellingPrice,
@@ -78,7 +91,11 @@ const DynamicVariantForm = ({ form, onSubmit, loading, productOption, selectedPr
             media: mediaIds
         }
 
-        await onSubmit(payload)
+        try {
+            await onSubmit(payload)
+        } catch (err) {
+            showToast('error', err?.message || 'Failed to save variant')
+        }
     }
 
     return (
@@ -127,7 +144,7 @@ const DynamicVariantForm = ({ form, onSubmit, loading, productOption, selectedPr
                                                 <FormLabel>
                                                     {attr.label} 
                                                     {attr.unit && <span className='text-sm text-gray-500'> ({attr.unit})</span>}
-                                                    <span className='text-red-500'> *</span>
+                                                    {attr?.required !== false && <span className='text-red-500'> *</span>}
                                                 </FormLabel>
                                                 <FormControl>
                                                     {attr.options && attr.options.length > 0 ? (
@@ -159,6 +176,40 @@ const DynamicVariantForm = ({ form, onSubmit, loading, productOption, selectedPr
                             Please select a product to configure variant attributes
                         </div>
                     )}
+
+                    {/* Variant Name */}
+                    <div>
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Variant Name</FormLabel>
+                                    <FormControl>
+                                        <Input type="text" placeholder="Optional name for admin" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+
+                    {/* Variant Barcode */}
+                    <div>
+                        <FormField
+                            control={form.control}
+                            name="barcode"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Barcode</FormLabel>
+                                    <FormControl>
+                                        <Input type="text" placeholder="Scan or enter barcode" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
 
                     {/* SKU */}
                     <div>
@@ -281,7 +332,7 @@ const DynamicVariantForm = ({ form, onSubmit, loading, productOption, selectedPr
                     <ButtonLoading 
                         loading={loading} 
                         type="submit" 
-                        text="Save Product Variant" 
+                        text={submitText} 
                         className="cursor-pointer" 
                     />
                 </div>
