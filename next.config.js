@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     images: {
@@ -15,7 +17,17 @@ const nextConfig = {
                 pathname: '/**',
             }
         ]
-    }
+    },
+    transpilePackages: ['ckeditor5'],
+    webpack: (config) => {
+        config.resolve.alias = {
+            ...(config.resolve.alias || {}),
+            ckeditor5: path.resolve(__dirname, 'node_modules', 'ckeditor5'),
+            '@ckeditor': path.resolve(__dirname, 'node_modules', '@ckeditor'),
+        };
+
+        return config;
+    },
 };
 
 module.exports = nextConfig;

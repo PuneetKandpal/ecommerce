@@ -1,7 +1,6 @@
 import { isAuthenticated } from "@/lib/authentication"
 import { connectDB } from "@/lib/databaseConnection"
 import { catchError, response } from "@/lib/helperFunction"
-import { zSchema } from "@/lib/zodSchema"
 import ProductVariantModel from "@/models/ProductVariant.model"
 
 export async function POST(request) {
@@ -14,34 +13,28 @@ export async function POST(request) {
         await connectDB()
         const payload = await request.json()
 
-        const schema = zSchema.pick({
-            product: true,
-            sku: true,
-            color: true,
-            size: true,
-            mrp: true,
-            sellingPrice: true,
-            discountPercentage: true,
-            media: true
-        })
-
-
-        const validate = schema.safeParse(payload)
-        if (!validate.success) {
-            return response(false, 400, 'Invalid or missing fields.', validate.error)
+        // Validate required fields
+        if (!payload.product || !payload.sku || !payload.mrp || !payload.sellingPrice) {
+            return response(false, 400, 'Required fields: product, sku, mrp, sellingPrice')
         }
 
-        const variantData = validate.data
+        if (!payload.attributes || Object.keys(payload.attributes).length === 0) {
+            return response(false, 400, 'At least one variant attribute is required')
+        }
+
+        if (!payload.media || payload.media.length === 0) {
+            return response(false, 400, 'At least one media item is required')
+        }
 
         const newProductVariant = new ProductVariantModel({
-            product: variantData.product,
-            color: variantData.color,
-            size: variantData.size,
-            sku: variantData.sku,
-            mrp: variantData.mrp,
-            sellingPrice: variantData.sellingPrice,
-            discountPercentage: variantData.discountPercentage,
-            media: variantData.media,
+            product: payload.product,
+            attributes: payload.attributes,
+            sku: payload.sku,
+            mrp: Number(payload.mrp),
+            sellingPrice: Number(payload.sellingPrice),
+            discountPercentage: Number(payload.discountPercentage) || 0,
+            stock: Number(payload.stock) || 0,
+            media: payload.media,
         })
 
         await newProductVariant.save()

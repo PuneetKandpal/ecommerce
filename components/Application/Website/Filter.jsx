@@ -25,7 +25,12 @@ const Filter = () => {
     const [selectedAttributes, setSelectedAttributes] = useState({})
 
     const { data: categoryData } = useFetch('/api/category/get-category')
-    const { data: attributesData } = useFetch('/api/product-variant/attributes')
+    
+    // Fetch attributes based on selected categories
+    const attributesUrl = selectedCategory.length > 0 
+        ? `/api/product-variant/attributes?category=${selectedCategory.join(',')}` 
+        : '/api/product-variant/attributes'
+    const { data: attributesData } = useFetch(attributesUrl)
 
     useEffect(() => {
         // Load category from URL
