@@ -17,13 +17,13 @@ export async function GET() {
         const userId = auth.userId
 
         // get recent orders 
-        const recentOrders = await OrderModel.find({ user: userId }).populate('products.productId', 'name slug').populate({
+        const recentOrders = await OrderModel.find({ user: userId, deletedAt: null }).populate('products.productId', 'name slug').populate({
             path: 'products.variantId',
             populate: { path: 'media' }
         }).limit(10).lean()
 
         // get total order count 
-        const totalOrder = await OrderModel.countDocuments({ user: userId })
+        const totalOrder = await OrderModel.countDocuments({ user: userId, deletedAt: null })
 
         return response(true, 200, 'Dashboard info.', { recentOrders, totalOrder })
 

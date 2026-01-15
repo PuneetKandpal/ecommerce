@@ -56,7 +56,9 @@ const MyAccount = () => {
                                             <th className='text-start p-2 text-sm border-b text-nowrap text-gray-500'>Sr.No.</th>
                                             <th className='text-start p-2 text-sm border-b text-nowrap text-gray-500'>Order id</th>
                                             <th className='text-start p-2 text-sm border-b text-nowrap text-gray-500'>Total Item</th>
+                                            <th className='text-start p-2 text-sm border-b text-nowrap text-gray-500'>Status</th>
                                             <th className='text-start p-2 text-sm border-b text-nowrap text-gray-500'>Amount</th>
+                                            <th className='text-start p-2 text-sm border-b text-nowrap text-gray-500'>Invoice</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -67,8 +69,14 @@ const MyAccount = () => {
                                                 <td className='text-start text-sm text-gray-500 p-2 '>
                                                     {order.products.length}
                                                 </td>
+                                                <td className='text-start text-sm text-gray-500 p-2 capitalize'>
+                                                    {order.status}
+                                                </td>
                                                 <td className='text-start text-sm text-gray-500 p-2 '>
                                                     {order.totalAmount.toLocaleString('en-In', { style: 'currency', currency: 'INR' })}
+                                                </td>
+                                                <td className='text-start text-sm text-gray-500 p-2'>
+                                                    <Link className='underline hover:text-blue-500 underline-offset-2' href={`/api/orders/invoice/${order.order_id}`} target='_blank'>Invoice</Link>
                                                 </td>
                                             </tr>
                                         ))}

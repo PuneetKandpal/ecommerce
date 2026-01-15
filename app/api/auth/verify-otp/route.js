@@ -31,6 +31,9 @@ export async function POST(request) {
             return response(false, 404, 'User not found.')
         }
 
+        if (getUser.isBlocked) {
+            return response(false, 403, 'Your account is blocked. Please contact support.')
+        }
 
         const loggedInUserData = {
             _id: getUser._id.toString(),

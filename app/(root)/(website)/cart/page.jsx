@@ -11,6 +11,19 @@ import { HiMinus, HiPlus } from "react-icons/hi2";
 import { IoCloseCircleOutline } from "react-icons/io5";
 import { decreaseQuantity, increaseQuantity, removeFromCart } from '@/store/reducer/cartReducer'
 
+const renderAttributes = (attributes) => {
+    if (!attributes) return null
+    const entries = typeof attributes?.entries === 'function'
+        ? Array.from(attributes.entries())
+        : Object.entries(attributes)
+
+    return entries
+        .filter(([, v]) => v !== undefined && v !== null && String(v).length)
+        .map(([k, v]) => (
+            <p key={k} className='text-sm'>{k}: {String(v)}</p>
+        ))
+}
+
 const breadCrumb = {
     title: 'Cart',
     links: [
@@ -76,8 +89,12 @@ const CartPage = () => {
                                                             {product.name}
                                                         </Link>
                                                     </h4>
-                                                    <p className='text-sm'>Color:{product.color}</p>
-                                                    <p className='text-sm'>Size:{product.size}</p>
+                                                    {renderAttributes(product.attributes) || (
+                                                        <>
+                                                            {product.color ? <p className='text-sm'>Color: {product.color}</p> : null}
+                                                            {product.size ? <p className='text-sm'>Size: {product.size}</p> : null}
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>

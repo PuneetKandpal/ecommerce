@@ -17,8 +17,19 @@ export async function middleware(request) {
         }
 
         // verify token 
-        const access_token = request.cookies.get('access_token').value
-        const { payload } = await jwtVerify(access_token, new TextEncoder().encode(process.env.SECRET_KEY))
+        const access_token = request.cookies.get('access_token')?.value
+        let payload;
+        try {
+            const verified = await jwtVerify(access_token, new TextEncoder().encode(process.env.SECRET_KEY))
+            payload = verified.payload
+        } catch (error) {
+            // invalid/expired token => clear cookie to avoid redirect loops
+            const res = pathname.startsWith('/auth')
+                ? NextResponse.next()
+                : NextResponse.redirect(new URL(WEBSITE_LOGIN, request.nextUrl))
+            res.cookies.delete('access_token')
+            return res
+        }
 
         const role = payload.role
 
@@ -27,15 +38,12 @@ export async function middleware(request) {
             return NextResponse.redirect(new URL(role === 'admin' ? ADMIN_DASHBOARD : USER_DASHBOARD, request.nextUrl))
         }
 
-
         // protect admin route  
         if (pathname.startsWith('/admin') && role !== 'admin') {
             return NextResponse.redirect(new URL(WEBSITE_LOGIN, request.nextUrl))
         }
 
-
         // protect user route  
-
         if (pathname.startsWith('/my-account') && role !== 'user') {
             return NextResponse.redirect(new URL(WEBSITE_LOGIN, request.nextUrl))
         }
@@ -44,10 +52,14 @@ export async function middleware(request) {
 
     } catch (error) {
         console.log(error)
-        return NextResponse.redirect(new URL(WEBSITE_LOGIN, request.nextUrl))
+        const pathname = request.nextUrl.pathname
+        const res = pathname.startsWith('/auth')
+            ? NextResponse.next()
+            : NextResponse.redirect(new URL(WEBSITE_LOGIN, request.nextUrl))
+        res.cookies.delete('access_token')
+        return res
     }
 }
-
 
 export const config = {
     matcher: ['/admin/:path*', '/my-account/:path*', '/auth/:path*']

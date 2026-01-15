@@ -13,7 +13,8 @@ export async function GET(request) {
         await connectDB()
 
         const filter = {
-            deletedAt: null
+            deletedAt: null,
+            role: 'user'
         }
 
         const getcustomers = await UserModel.find(filter).sort({ createdAt: -1 }).lean()

@@ -1,6 +1,6 @@
 import { isAuthenticated } from "@/lib/authentication"
 import { connectDB } from "@/lib/databaseConnection"
-import { catchError } from "@/lib/helperFunction"
+import { catchError, response } from "@/lib/helperFunction"
 import UserModel from "@/models/User.model"
 
 import { NextResponse } from "next/server"
@@ -25,12 +25,12 @@ export async function GET(request) {
         const deleteType = searchParams.get('deleteType')
 
         // Build match query  
-        let matchQuery = {}
+        let matchQuery = { role: 'user' }
 
         if (deleteType === 'SD') {
-            matchQuery = { deletedAt: null }
+            matchQuery = { ...matchQuery, deletedAt: null }
         } else if (deleteType === 'PD') {
-            matchQuery = { deletedAt: { $ne: null } }
+            matchQuery = { ...matchQuery, deletedAt: { $ne: null } }
         }
 
         // Global search 
@@ -68,12 +68,14 @@ export async function GET(request) {
             {
                 $project: {
                     _id: 1,
+                    role: 1,
                     name: 1,
                     email: 1,
                     phone: 1,
                     address: 1,
                     avatar: 1,
                     isEmailVerified: 1,
+                    isBlocked: 1,
                     createdAt: 1,
                     updatedAt: 1,
                     deletedAt: 1

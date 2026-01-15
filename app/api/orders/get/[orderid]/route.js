@@ -15,7 +15,7 @@ export async function GET(request, { params }) {
             return response(false, 404, 'Order not found.')
         }
 
-        const orderData = await OrderModel.findOne({ order_id: orderid }).populate('products.productId', 'name slug').populate({
+        const orderData = await OrderModel.findOne({ order_id: orderid, deletedAt: null }).populate('products.productId', 'name slug').populate({
             path: 'products.variantId',
             populate: { path: 'media' }
         }).lean()

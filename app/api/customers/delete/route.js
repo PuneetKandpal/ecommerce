@@ -20,7 +20,7 @@ export async function PUT(request) {
             return response(false, 400, 'Invalid or empty id list.')
         }
 
-        const data = await UserModel.find({ _id: { $in: ids } }).lean()
+        const data = await UserModel.find({ _id: { $in: ids }, role: 'user' }).lean()
         if (!data.length) {
             return response(false, 404, 'Data not found.')
         }
@@ -30,9 +30,9 @@ export async function PUT(request) {
         }
 
         if (deleteType === 'SD') {
-            await UserModel.updateMany({ _id: { $in: ids } }, { $set: { deletedAt: new Date().toISOString() } });
+            await UserModel.updateMany({ _id: { $in: ids }, role: 'user' }, { $set: { deletedAt: new Date().toISOString() } });
         } else {
-            await UserModel.updateMany({ _id: { $in: ids } }, { $set: { deletedAt: null } });
+            await UserModel.updateMany({ _id: { $in: ids }, role: 'user' }, { $set: { deletedAt: null } });
         }
 
 
@@ -62,16 +62,16 @@ export async function DELETE(request) {
             return response(false, 400, 'Invalid or empty id list.')
         }
 
-        const data = await UserModel.find({ _id: { $in: ids } }).lean()
+        const data = await UserModel.find({ _id: { $in: ids }, role: 'user' }).lean()
         if (!data.length) {
             return response(false, 404, 'Data not found.')
         }
 
-        if (!deleteType === 'PD') {
+        if (deleteType !== 'PD') {
             return response(false, 400, 'Invalid delet operation. Delete type should be PD for this route.')
         }
 
-        await UserModel.deleteMany({ _id: { $in: ids } })
+        await UserModel.deleteMany({ _id: { $in: ids }, role: 'user' })
 
         return response(true, 200, 'Data deleted permanently')
     } catch (error) {

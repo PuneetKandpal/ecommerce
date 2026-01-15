@@ -33,6 +33,10 @@ export async function POST(request) {
             return response(false, 400, 'Invalid login credentials.')
         }
 
+        if (getUser.isBlocked) {
+            return response(false, 403, 'Your account is blocked. Please contact support.')
+        }
+
         // resend email verification link 
         if (!getUser.isEmailVerified) {
             const secret = new TextEncoder().encode(process.env.SECRET_KEY)

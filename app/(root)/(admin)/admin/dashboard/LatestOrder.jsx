@@ -36,7 +36,6 @@ const LatestOrder = () => {
             <TableHeader>
                 <TableRow>
                     <TableHead>Order Id</TableHead>
-                    <TableHead>Payment Id</TableHead>
                     <TableHead>Total Item</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Amount</TableHead>
@@ -46,8 +45,7 @@ const LatestOrder = () => {
 
                 {latestOrder?.map((order) => (
                     <TableRow key={order._id}>
-                        <TableCell >{order._id}</TableCell>
-                        <TableCell >{order.payment_id}</TableCell>
+                        <TableCell >{order.order_id}</TableCell>
                         <TableCell >{order.products.length}</TableCell>
                         <TableCell >{statusBadge(order.status)}</TableCell>
                         <TableCell>{order.totalAmount}</TableCell>

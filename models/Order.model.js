@@ -77,12 +77,14 @@ const orderSchema = new mongoose.Schema({
     },
     payment_id: {
         type: String,
-        required: true
+        required: false,
+        default: null
     },
     order_id: {
         type: String,
         required: true
     },
+
     deletedAt: {
         type: Date,
         default: null,

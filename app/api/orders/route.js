@@ -1,6 +1,6 @@
 import { isAuthenticated } from "@/lib/authentication"
 import { connectDB } from "@/lib/databaseConnection"
-import { catchError } from "@/lib/helperFunction"
+import { catchError, response } from "@/lib/helperFunction"
 import OrderModel from "@/models/Order.model"
 
 import { NextResponse } from "next/server"
@@ -37,7 +37,6 @@ export async function GET(request) {
         if (globalFilter) {
             matchQuery["$or"] = [
                 { order_id: { $regex: globalFilter, $options: 'i' } },
-                { payment_id: { $regex: globalFilter, $options: 'i' } },
                 { name: { $regex: globalFilter, $options: 'i' } },
                 { email: { $regex: globalFilter, $options: 'i' } },
                 { phone: { $regex: globalFilter, $options: 'i' } },
@@ -46,7 +45,7 @@ export async function GET(request) {
                 { city: { $regex: globalFilter, $options: 'i' } },
                 { pincode: { $regex: globalFilter, $options: 'i' } },
                 { discount: { $regex: globalFilter, $options: 'i' } },
-                { couponDiscount: { $regex: globalFilter, $options: 'i' } },
+                { couponDiscountAmount: { $regex: globalFilter, $options: 'i' } },
                 { totalAmount: { $regex: globalFilter, $options: 'i' } },
                 { status: { $regex: globalFilter, $options: 'i' } },
             ]

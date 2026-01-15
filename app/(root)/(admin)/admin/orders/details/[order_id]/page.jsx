@@ -8,7 +8,6 @@ import { use, useEffect, useState } from "react"
 import { ADMIN_DASHBOARD, ADMIN_ORDER_SHOW } from "@/routes/AdminPanelRoute"
 import BreadCrumb from "@/components/Application/Admin/BreadCrumb"
 import Select from "@/components/Application/Select"
-import { orderStatus } from "@/lib/utils"
 import ButtonLoading from "@/components/Application/ButtonLoading"
 import { showToast } from "@/lib/showToast"
 import axios from "axios"
@@ -21,6 +20,8 @@ const breadcrumbData = [
 
 const statusOptions = [
     { label: 'Pending', value: 'pending' },
+    { label: 'Payment Received', value: 'payment_received' },
+    { label: 'Packed', value: 'packed' },
     { label: 'Processing', value: 'processing' },
     { label: 'Shipped', value: 'shipped' },
     { label: 'Delivered', value: 'delivered' },
@@ -81,8 +82,11 @@ const OrderDetails = ({ params }) => {
                         <div className="px-5 mb-5">
                             <div className="mb-5">
                                 <p><b>Order Id:</b> {orderData?.order_id}</p>
-                                <p><b>Transaction Id:</b> {orderData?.payment_id}</p>
                                 <p className="capitalize"><b>Status:</b> {orderData?.status}</p>
+                                <div className="flex gap-3 flex-wrap mt-2">
+                                    <a className="underline" href={`/api/orders/invoice/${orderData?.order_id}`} target="_blank" rel="noreferrer">Invoice (PDF)</a>
+                                    <a className="underline" href={`/api/orders/shipping-label/${orderData?.order_id}`} target="_blank" rel="noreferrer">Shipping Label (PDF)</a>
+                                </div>
                             </div>
                             <table className="w-full border">
                                 <thead className="border-b bg-gray-50 dark:bg-card md:table-header-group hidden">
@@ -102,8 +106,16 @@ const OrderDetails = ({ params }) => {
                                                     <div>
                                                         <h4 className="text-lg">
                                                             <Link href={WEBSITE_PRODUCT_DETAILS(product?.productId?.slug)}>{product?.productId?.name}</Link>
-                                                            <p>Color: {product?.variantId?.color}</p>
-                                                            <p>Size: {product?.variantId?.size}</p>
+                                                            {product?.variantId?.attributes
+                                                                ? Object.entries(product.variantId.attributes).map(([k, v]) => (
+                                                                    <p key={k}>{k}: {String(v)}</p>
+                                                                ))
+                                                                : (
+                                                                    <>
+                                                                        {product?.variantId?.color ? <p>Color: {product.variantId.color}</p> : null}
+                                                                        {product?.variantId?.size ? <p>Size: {product.variantId.size}</p> : null}
+                                                                    </>
+                                                                )}
                                                         </h4>
                                                     </div>
                                                 </div>

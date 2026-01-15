@@ -9,15 +9,17 @@ export async function POST(request) {
 
         const verifiedCartData = await Promise.all(
             payload.map(async (cartItem) => {
-                const variant = await ProductVariantModel.findById(cartItem.variantId).populate('product').populate('media', 'secure_url').lean()
-                if (variant) {
+                const variant = await ProductVariantModel.findOne({ _id: cartItem.variantId, deletedAt: null })
+                    .populate('product', 'name slug')
+                    .populate('media', 'secure_url')
+                    .lean()
+                if (variant && (typeof variant.stock !== 'number' || variant.stock > 0)) {
                     return {
                         productId: variant.product._id,
                         variantId: variant._id,
                         name: variant.product.name,
                         url: variant.product.slug,
-                        size: variant.size,
-                        color: variant.color,
+                        attributes: variant.attributes || {},
                         mrp: variant.mrp,
                         sellingPrice: variant.sellingPrice,
                         media: variant?.media[0]?.secure_url,

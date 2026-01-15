@@ -13,17 +13,30 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios'
 import Image from 'next/image'
 import Link from 'next/link'
-import React, { useActionState, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useDispatch, useSelector } from 'react-redux'
 import { IoCloseCircleSharp } from "react-icons/io5";
-import { z } from 'zod'
 import { FaShippingFast } from "react-icons/fa";
 import { Textarea } from '@/components/ui/textarea'
-import Script from 'next/script'
 import { useRouter } from 'next/navigation'
+import { z } from 'zod'
 
 import loading from '@/public/assets/images/loading.svg'
+
+const renderAttributes = (attributes) => {
+    if (!attributes) return null
+    const entries = typeof attributes?.entries === 'function'
+        ? Array.from(attributes.entries())
+        : Object.entries(attributes)
+
+    return entries
+        .filter(([, v]) => v !== undefined && v !== null && String(v).length)
+        .map(([k, v]) => (
+            <p key={k} className='text-sm'>{k}: {String(v)}</p>
+        ))
+}
+
 const breadCrumb = {
     title: 'Checkout',
     links: [
@@ -36,8 +49,6 @@ const Checkout = () => {
     const cart = useSelector(store => store.cartStore)
     const authStore = useSelector(store => store.authStore)
     const [verifiedCartData, setVerifiedCartData] = useState([])
-    const { data: getVerifiedCartData } = useFetch('/api/cart-verification', 'POST', { data: cart.products })
-
     const [isCouponApplied, setIsCouponApplied] = useState(false)
     const [subtotal, setSubTotal] = useState(0)
     const [discount, setDiscount] = useState(0)
@@ -45,9 +56,11 @@ const Checkout = () => {
     const [totalAmount, setTotalAmount] = useState(0)
     const [couponLoading, setCouponLoading] = useState(false)
     const [couponCode, setCouponCode] = useState('')
-
     const [placingOrder, setPlacingOrder] = useState(false)
     const [savingOrder, setSavingOrder] = useState(false)
+
+    const { data: getVerifiedCartData } = useFetch('/api/cart-verification', 'POST', { data: cart.products })
+
     useEffect(() => {
         if (getVerifiedCartData && getVerifiedCartData.success) {
             const cartData = getVerifiedCartData.data
@@ -58,7 +71,6 @@ const Checkout = () => {
             });
         }
     }, [getVerifiedCartData])
-
 
     useEffect(() => {
         const cartProducts = cart.products
@@ -74,10 +86,6 @@ const Checkout = () => {
         couponForm.setValue('minShoppingAmount', subTotalAmount)
 
     }, [cart])
-
-
-
-    // coupon form 
 
     const couponFormSchema = zSchema.pick({
         code: true,
@@ -123,8 +131,6 @@ const Checkout = () => {
         setTotalAmount(subtotal)
     }
 
-
-    // place order 
     const orderFormSchema = zSchema.pick({
         name: true,
         email: true,
@@ -155,103 +161,51 @@ const Checkout = () => {
         }
     })
 
-
     useEffect(() => {
         if (authStore) {
             orderForm.setValue('userId', authStore?.auth?._id)
         }
     }, [authStore])
 
-    // get order id 
-    const getOrderId = async (amount) => {
-        try {
-            const { data: orderIdData } = await axios.post('/api/payment/get-order-id', { amount })
-            if (!orderIdData.success) {
-                throw new Error(orderIdData.message)
-            }
-
-            return { success: true, order_id: orderIdData.data }
-
-        } catch (error) {
-            return { success: false, message: error.message }
-        }
-    }
-
     const placeOrder = async (formData) => {
- 
         setPlacingOrder(true)
         try {
-            const generateOrderId = await getOrderId(totalAmount)
-            if (!generateOrderId.success) {
-                throw new Error(generateOrderId.message)
-            }
+            setSavingOrder(true)
 
-            const order_id = generateOrderId.order_id
-
-            const razOption = {
-                "key": process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-                "amount": totalAmount * 100,
-                "currency": "INR",
-                "name": "E-store",
-                "description": "Payment for order",
-                "image": "https://res.cloudinary.com/dg7efdu9o/image/upload/v1750052410/logo-black_mb1rve.webp",
-                "order_id": order_id,
-                "handler": async function (response) {
-                    setSavingOrder(true)
-                    const products = verifiedCartData.map((cartItem) => (
-                        {
-                            productId: cartItem.productId,
-                            variantId: cartItem.variantId,
-                            name: cartItem.name,
-                            qty: cartItem.qty,
-                            mrp: cartItem.mrp,
-                            sellingPrice: cartItem.sellingPrice,
-                        }
-                    ))
-
-                    const { data: paymentResponseData } = await axios.post('/api/payment/save-order', {
-                        ...formData,
-                        ...response,
-                        products: products,
-                        subtotal: subtotal,
-                        discount: discount,
-                        couponDiscountAmount: couponDiscountAmount,
-                        totalAmount: totalAmount
-                    })
-
-                    if (paymentResponseData.success) {
-                        showToast('success', paymentResponseData.message)
-                        dispatch(clearCart())
-                        orderForm.reset()
-                        router.push(WEBSITE_ORDER_DETAILS(response.razorpay_order_id))
-                        setSavingOrder(false)
-                    } else {
-                        showToast('error', paymentResponseData.message)
-                        setSavingOrder(false)
-                    }
-                },
-                "prefill": {
-                    "name": formData.name,
-                    "email": formData.email,
-                    "contact": formData.phone
-                },
-
-                "theme": {
-                    "color": "#7c3aed"
+            const products = (verifiedCartData || []).map((cartItem) => (
+                {
+                    productId: cartItem.productId,
+                    variantId: cartItem.variantId,
+                    name: cartItem.name,
+                    qty: cartItem.qty,
+                    mrp: cartItem.mrp,
+                    sellingPrice: cartItem.sellingPrice,
                 }
+            ))
+
+            const { data: placeOrderResponse } = await axios.post('/api/orders/place', {
+                ...formData,
+                products,
+                subtotal,
+                discount,
+                couponDiscountAmount,
+                totalAmount
+            })
+
+            if (!placeOrderResponse.success) {
+                throw new Error(placeOrderResponse.message)
             }
 
-            const rzp = new Razorpay(razOption)
-            rzp.on('payment.failed', function (response) {
-                showToast('error', response.error.description)
-            });
-
-            rzp.open()
+            showToast('success', placeOrderResponse.message)
+            dispatch(clearCart())
+            orderForm.reset()
+            router.push(WEBSITE_ORDER_DETAILS(placeOrderResponse?.data?.order_id))
 
         } catch (error) {
             showToast('error', error.message)
         } finally {
             setPlacingOrder(false)
+            setSavingOrder(false)
         }
     }
 
@@ -425,7 +379,7 @@ const Checkout = () => {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Textarea placeholder="Enter order note" />
+                                                        <Textarea placeholder="Enter order note" {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -460,8 +414,12 @@ const Checkout = () => {
                                                             <h4 className='font-medium line-clamp-1'>
                                                                 <Link href={WEBSITE_PRODUCT_DETAILS(product.url)}>{product.name}</Link>
                                                             </h4>
-                                                            <p className='text-sm'>Color: {product.color}</p>
-                                                            <p className='text-sm'>Size: {product.size}</p>
+                                                            {renderAttributes(product.attributes) || (
+                                                                <>
+                                                                    {product.color ? <p className='text-sm'>Color: {product.color}</p> : null}
+                                                                    {product.size ? <p className='text-sm'>Size: {product.size}</p> : null}
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </td>
@@ -549,7 +507,6 @@ const Checkout = () => {
                 </div>
             }
 
-            <Script src='https://checkout.razorpay.com/v1/checkout.js' />
         </div>
     )
 }

@@ -20,6 +20,14 @@ const chartConfig = {
         label: "Pending",
         color: "#3b82f6",
     },
+    payment_received: {
+        label: "Payment Received",
+        color: "#6366f1",
+    },
+    packed: {
+        label: "Packed",
+        color: "#a855f7",
+    },
     processing: {
         label: "Processing",
         color: "#eab308",
@@ -130,6 +138,14 @@ export function OrderStatus() {
                     <li className="flex justify-between items-center mb-3 text-sm">
                         <span>Pending</span>
                         <span className="rounded-full px-2 text-sm bg-blue-500 text-white">{statusCount?.pending || 0}</span>
+                    </li>
+                    <li className="flex justify-between items-center mb-3 text-sm">
+                        <span>Payment Received</span>
+                        <span className="rounded-full px-2 text-sm bg-indigo-500 text-white">{statusCount?.payment_received || 0}</span>
+                    </li>
+                    <li className="flex justify-between items-center mb-3 text-sm">
+                        <span>Packed</span>
+                        <span className="rounded-full px-2 text-sm bg-purple-500 text-white">{statusCount?.packed || 0}</span>
                     </li>
                     <li className="flex justify-between items-center mb-3 text-sm">
                         <span>Processing</span>

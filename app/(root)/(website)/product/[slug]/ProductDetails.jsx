@@ -12,7 +12,8 @@ import { IoStar } from "react-icons/io5";
 import { WEBSITE_CART, WEBSITE_PRODUCT_DETAILS, WEBSITE_SHOP } from "@/routes/WebsiteRoute"
 import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useCallback, useState } from "react"
+import { useRouter } from 'next/navigation'
 import imgPlaceholder from '@/public/assets/images/img-placeholder.webp'
 import { decode, encode } from "entities";
 import { HiMinus, HiPlus } from "react-icons/hi2";
@@ -23,7 +24,10 @@ import { showToast } from "@/lib/showToast";
 import { Button } from "@/components/ui/button";
 import loadingSvg from '@/public/assets/images/loading.svg'
 import ProductReveiw from "@/components/Application/Website/ProductReveiw";
-const ProductDetails = ({ product, variant, attributeOptions, selectedAttributes, reviewCount }) => {
+
+const ProductDetails = ({ product, variant, attributeOptions, variants, selectedAttributes, reviewCount }) => {
+
+    const router = useRouter()
 
     const dispatch = useDispatch()
     const cartStore = useSelector(store => store.cartStore)
@@ -32,6 +36,109 @@ const ProductDetails = ({ product, variant, attributeOptions, selectedAttributes
     const [qty, setQty] = useState(1)
     const [isAddedIntoCart, setIsAddedIntoCart] = useState(false)
     const [isProductLoading, setIsProductLoading] = useState(false)
+
+    const getAttrValue = useCallback((attrs, key) => {
+        if (!attrs) return undefined
+        if (typeof attrs.get === 'function') return attrs.get(key)
+        return attrs?.[key]
+    }, [])
+
+    const selection = useMemo(() => {
+        const sel = {}
+        if (product?.variantConfig?.attributes && Array.isArray(product.variantConfig.attributes)) {
+            product.variantConfig.attributes.forEach((attr) => {
+                const v = getAttrValue(variant?.attributes, attr.key) || selectedAttributes?.[attr.key]
+                if (v !== undefined && v !== null && String(v).length) {
+                    sel[attr.key] = String(v)
+                }
+            })
+        }
+        return sel
+    }, [product?.variantConfig?.attributes, variant?.attributes, selectedAttributes, getAttrValue])
+
+    const doesOptionExist = useCallback((attrKey, optionValue) => {
+        if (!variants || !Array.isArray(variants) || variants.length === 0) return true
+
+        return variants.some((v) => {
+            const attrs = v?.attributes
+            const val = getAttrValue(attrs, attrKey)
+            if (val === undefined || val === null) return false
+            if (String(val) !== String(optionValue)) return false
+            if (typeof v?.stock === 'number') return v.stock > 0
+            return true
+        })
+    }, [variants, getAttrValue])
+
+    const isOptionCompatible = useCallback((attrKey, optionValue) => {
+        if (!variants || !Array.isArray(variants) || variants.length === 0) return true
+
+        const candidate = { ...selection, [attrKey]: String(optionValue) }
+
+        return variants.some((v) => {
+            const attrs = v?.attributes
+            const matches = Object.entries(candidate).every(([k, val]) => String(getAttrValue(attrs, k)) === String(val))
+            if (!matches) return false
+            if (typeof v?.stock === 'number') {
+                return v.stock > 0
+            }
+            return true
+        })
+    }, [variants, selection, getAttrValue])
+
+    const pickBestVariantForChange = useCallback((changedKey, changedValue) => {
+        if (!variants || !Array.isArray(variants) || variants.length === 0) return null
+
+        const candidates = variants.filter((v) => {
+            const attrs = v?.attributes
+            if (String(getAttrValue(attrs, changedKey)) !== String(changedValue)) return false
+            if (typeof v?.stock === 'number') return v.stock > 0
+            return true
+        })
+
+        if (!candidates.length) return null
+
+        const attributeKeys = (product?.variantConfig?.attributes || []).map((a) => a.key)
+        const currentSelection = selection
+
+        let best = candidates[0]
+        let bestScore = -1
+
+        for (const c of candidates) {
+            const attrs = c?.attributes
+            let score = 0
+            for (const k of attributeKeys) {
+                if (k === changedKey) continue
+                const cur = currentSelection?.[k]
+                if (!cur) continue
+                const cv = getAttrValue(attrs, k)
+                if (cv !== undefined && String(cv) === String(cur)) {
+                    score += 1
+                }
+            }
+            if (score > bestScore) {
+                bestScore = score
+                best = c
+            }
+        }
+
+        return best
+    }, [variants, product?.variantConfig?.attributes, selection, getAttrValue])
+
+    const buildUrlFromVariant = useCallback((v) => {
+        const params = new URLSearchParams()
+        const attrs = v?.attributes
+        if (product?.variantConfig?.attributes) {
+            product.variantConfig.attributes.forEach((attr) => {
+                const value = getAttrValue(attrs, attr.key)
+                if (value !== undefined && value !== null && String(value).length) {
+                    params.set(attr.key, String(value))
+                }
+            })
+        }
+        const qs = params.toString()
+        return `${WEBSITE_PRODUCT_DETAILS(product.slug)}${qs ? `?${qs}` : ''}`
+    }, [product?.slug, product?.variantConfig?.attributes, getAttrValue])
+
     useEffect(() => {
         setActiveThumb(variant?.media[0]?.secure_url)
     }, [variant])
@@ -64,7 +171,6 @@ const ProductDetails = ({ product, variant, attributeOptions, selectedAttributes
             }
         }
     }
-
 
     const handleAddToCart = () => {
         const cartProduct = {
@@ -165,29 +271,10 @@ const ProductDetails = ({ product, variant, attributeOptions, selectedAttributes
                         const attrKey = attrConfig.key
                         const attrLabel = attrConfig.label
                         const attrUnit = attrConfig.unit
-                        const currentValue = variant?.attributes?.[attrKey] || selectedAttributes?.[attrKey] || ''
+                        const currentValue = getAttrValue(variant?.attributes, attrKey) || selectedAttributes?.[attrKey] || ''
                         const availableOptions = attributeOptions[attrKey] || []
 
                         if (availableOptions.length === 0) return null
-
-                        // Build URL with all current attributes except the one being changed
-                        const buildUrlForOption = (optionValue) => {
-                            const params = new URLSearchParams()
-                            // Add all current selected attributes
-                            if (product.variantConfig?.attributes) {
-                                product.variantConfig.attributes.forEach(attr => {
-                                    if (attr.key === attrKey) {
-                                        params.set(attr.key, optionValue)
-                                    } else {
-                                        const existingValue = selectedAttributes?.[attr.key] || variant?.attributes?.[attr.key]
-                                        if (existingValue) {
-                                            params.set(attr.key, existingValue)
-                                        }
-                                    }
-                                })
-                            }
-                            return `${WEBSITE_PRODUCT_DETAILS(product.slug)}?${params.toString()}`
-                        }
 
                         return (
                             <div key={attrKey} className="mt-5">
@@ -196,23 +283,64 @@ const ProductDetails = ({ product, variant, attributeOptions, selectedAttributes
                                     {currentValue}{attrUnit ? ` ${attrUnit}` : ''}
                                 </p>
                                 <div className="flex gap-3 flex-wrap">
-                                    {availableOptions.map(optionValue => (
-                                        <Link
-                                            onClick={() => setIsProductLoading(true)}
-                                            href={buildUrlForOption(optionValue)}
-                                            key={optionValue}
-                                            className={`border py-1 px-3 rounded-lg cursor-pointer hover:bg-primary hover:text-white ${
-                                                String(optionValue) === String(currentValue) ? 'bg-primary text-white' : ''
-                                            }`}
-                                        >
-                                            {optionValue}{attrUnit ? ` ${attrUnit}` : ''}
-                                        </Link>
-                                    ))}
+                                    {availableOptions.map(optionValue => {
+                                        const isSelected = String(optionValue) === String(currentValue)
+                                        const exists = doesOptionExist(attrKey, optionValue)
+                                        const compatible = isOptionCompatible(attrKey, optionValue)
+                                        const isIncompatibleButSelectable = exists && !compatible && !isSelected
+
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={optionValue}
+                                                disabled={!exists}
+                                                onClick={() => {
+                                                    if (!exists) return
+                                                    setIsProductLoading(true)
+
+                                                    const best = pickBestVariantForChange(attrKey, optionValue)
+                                                    if (best) {
+                                                        const adjusted = (product?.variantConfig?.attributes || []).some((a) => {
+                                                            if (a.key === attrKey) return false
+                                                            const cur = selection?.[a.key]
+                                                            if (!cur) return false
+                                                            const next = getAttrValue(best?.attributes, a.key)
+                                                            return next !== undefined && String(next) !== String(cur)
+                                                        })
+                                                        if (adjusted) {
+                                                            showToast('warning', 'Some options were adjusted to match available configurations.')
+                                                        }
+                                                        router.push(buildUrlFromVariant(best))
+                                                        return
+                                                    }
+
+                                                    const params = new URLSearchParams()
+                                                    if (product.variantConfig?.attributes) {
+                                                        product.variantConfig.attributes.forEach(attr => {
+                                                            const value = attr.key === attrKey ? optionValue : selection?.[attr.key]
+                                                            if (value !== undefined && value !== null && String(value).length) {
+                                                                params.set(attr.key, value)
+                                                            }
+                                                        })
+                                                    }
+                                                    router.push(`${WEBSITE_PRODUCT_DETAILS(product.slug)}?${params.toString()}`)
+                                                }}
+                                                className={`border py-1 px-3 rounded-lg hover:bg-primary hover:text-white ${
+                                                    isSelected ? 'bg-primary text-white' : ''
+                                                } ${
+                                                    !exists ? 'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-inherit' : 'cursor-pointer'
+                                                } ${
+                                                    isIncompatibleButSelectable ? 'border-yellow-400 text-yellow-700 hover:border-primary hover:text-white' : ''
+                                                }`}
+                                            >
+                                                {optionValue}{attrUnit ? ` ${attrUnit}` : ''}
+                                            </button>
+                                        )
+                                    })}
                                 </div>
                             </div>
                         )
                     })}
-
                     <div className="mt-5">
                         <p className="font-bold mb-2">Quantity</p>
                         <div className="flex items-center h-10 border w-fit rounded-full">

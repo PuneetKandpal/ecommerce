@@ -13,7 +13,7 @@ export async function GET() {
 
         await connectDB()
 
-        const config = await SiteConfigModel.findOne({}).sort({ createdAt: -1 }).lean()
+        const config = await SiteConfigModel.findOne({}).sort({ createdAt: -1 }).populate('invoiceTemplateMedia').lean()
 
         return response(true, 200, 'Site config found.', config || null)
 
@@ -35,6 +35,20 @@ export async function PUT(request) {
 
         const schema = z.object({
             contactNotificationEmails: z.array(z.string().email()).optional().default([]),
+            orderNotificationEmails: z.array(z.string().email()).optional().default([]),
+            invoiceCompany: z.object({
+                name: z.string().optional().default(''),
+                email: z.string().optional().default(''),
+                phone: z.string().optional().default(''),
+                gstin: z.string().optional().default(''),
+                addressLine1: z.string().optional().default(''),
+                addressLine2: z.string().optional().default(''),
+                city: z.string().optional().default(''),
+                state: z.string().optional().default(''),
+                pincode: z.string().optional().default(''),
+                country: z.string().optional().default(''),
+            }).optional().default({}),
+            invoiceTemplateMedia: z.string().nullable().optional().default(null),
             sendContactCopyToUser: z.boolean().optional().default(false),
         })
 
@@ -50,6 +64,9 @@ export async function PUT(request) {
             {
                 $set: {
                     contactNotificationEmails: data.contactNotificationEmails,
+                    orderNotificationEmails: data.orderNotificationEmails,
+                    invoiceCompany: data.invoiceCompany,
+                    invoiceTemplateMedia: data.invoiceTemplateMedia,
                     sendContactCopyToUser: data.sendContactCopyToUser,
                 }
             },

@@ -35,6 +35,7 @@ const ProductPage = async ({ params, searchParams }) => {
                 product={getProduct?.data?.product}
                 variant={getProduct?.data?.variant}
                 attributeOptions={getProduct?.data?.attributeOptions}
+                variants={getProduct?.data?.variants}
                 selectedAttributes={getProduct?.data?.selectedAttributes}
                 reviewCount={getProduct?.data?.reviewCount}
             />

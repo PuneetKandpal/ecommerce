@@ -9,6 +9,7 @@ export async function GET() {
         if (!auth.isAuth) {
             return response(false, 403, 'Unauthorized.')
         }
+
         await connectDB()
 
         const orderStatus = await OrderModel.aggregate([
@@ -30,7 +31,7 @@ export async function GET() {
 
         return response(true, 200, 'Data found', orderStatus)
 
-    } catch {
+    } catch (error) {
         return catchError(error)
     }
 }

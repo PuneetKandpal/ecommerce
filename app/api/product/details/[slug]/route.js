@@ -34,7 +34,8 @@ export async function GET(request, { params }) {
 
         // Build variant filter from dynamic attributes in query params
         const variantFilter = {
-            product: getProduct._id
+            product: getProduct._id,
+            deletedAt: null
         }
 
         // If product has variantConfig, build attribute filters from query params
@@ -55,7 +56,7 @@ export async function GET(request, { params }) {
         
         if (!variant) {
             // If no exact match, try to find first available variant
-            variant = await ProductVariantModel.findOne({ product: getProduct._id }).populate('media', 'secure_url').lean()
+            variant = await ProductVariantModel.findOne({ product: getProduct._id, deletedAt: null }).populate('media', 'secure_url').lean()
         }
 
         if (!variant) {
@@ -68,11 +69,15 @@ export async function GET(request, { params }) {
             for (const attr of variantConfig.attributes) {
                 const distinctValues = await ProductVariantModel.distinct(
                     `attributes.${attr.key}`,
-                    { product: getProduct._id }
+                    { product: getProduct._id, deletedAt: null }
                 )
                 attributeOptions[attr.key] = distinctValues.filter(Boolean)
             }
         }
+
+        const variants = await ProductVariantModel.find({ product: getProduct._id, deletedAt: null })
+            .select('_id attributes stock')
+            .lean()
 
         // get review  
 
@@ -82,6 +87,7 @@ export async function GET(request, { params }) {
             product: getProduct,
             variant: variant,
             attributeOptions: attributeOptions,
+            variants: variants,
             selectedAttributes: selectedAttributes,
             reviewCount: review
         }

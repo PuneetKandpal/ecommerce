@@ -3,6 +3,8 @@ import Image from 'next/image'
 import React from 'react'
 
 const ModalMediaBlock = ({ media, selectedMedia, setSelectedMedia, isMultiple }) => {
+    const isPdf = typeof media?.secure_url === 'string' && /\.pdf(\?|#|$)/i.test(media.secure_url)
+
     const handleCheck = () => {
         let newSelectedMedia = []
         const isSelected = selectedMedia.find(m => m._id === media._id) ? true : false
@@ -37,13 +39,19 @@ const ModalMediaBlock = ({ media, selectedMedia, setSelectedMedia, isMultiple })
                 />
             </div>
             <div className='size-full relative'>
-                <Image
-                    src={media.secure_url}
-                    alt={media.alt || ''}
-                    width={300}
-                    height={300}
-                    className='object-cover md:h-[150px] h-[100px]'
-                />
+                {isPdf ? (
+                    <div className='md:h-[150px] h-[100px] flex items-center justify-center bg-gray-50 dark:bg-card text-sm font-semibold'>
+                        PDF
+                    </div>
+                ) : (
+                    <Image
+                        src={media.secure_url}
+                        alt={media.alt || ''}
+                        width={300}
+                        height={300}
+                        className='object-cover md:h-[150px] h-[100px]'
+                    />
+                )}
             </div>
         </label>
     )

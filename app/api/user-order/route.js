@@ -17,7 +17,7 @@ export async function GET() {
         const userId = auth.userId
 
 
-        const orders = await OrderModel.find({ user: userId }).populate('products.productId', 'name slug').populate({
+        const orders = await OrderModel.find({ user: userId, deletedAt: null }).populate('products.productId', 'name slug').populate({
             path: 'products.variantId',
             populate: { path: 'media' }
         }).lean()

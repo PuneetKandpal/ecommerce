@@ -46,6 +46,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
+    isBlocked: {
+        type: Boolean,
+        default: false
+    },
     deletedAt: {
         type: Date,
         default: null,
