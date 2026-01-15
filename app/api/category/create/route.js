@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/databaseConnection"
 import { catchError,  response } from "@/lib/helperFunction"
 import { zSchema } from "@/lib/zodSchema"
 import CategoryModel from "@/models/Category.model"
+import { z } from "zod"
 
 export async function POST(request) {
     try {
@@ -16,6 +17,8 @@ export async function POST(request) {
 
         const schema = zSchema.pick({
             name: true, slug: true
+        }).extend({
+            image: z.string().nullable().optional()
         })
 
         const validate = schema.safeParse(payload)
@@ -23,10 +26,12 @@ export async function POST(request) {
             return response(false, 400, 'Invalid or missing fields.', validate.error)
         }
 
-        const { name, slug } = validate.data
+        const { name, slug, image } = validate.data
 
         const newCategory = new CategoryModel({
-            name, slug
+            name,
+            slug,
+            image: image || null
         })
 
         await newCategory.save()

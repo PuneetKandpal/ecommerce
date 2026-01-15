@@ -14,12 +14,39 @@ import { IoMdClose } from "react-icons/io";
 
 import { HiMiniBars3 } from "react-icons/hi2";
 import Search from './Search'
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import ButtonLoading from '@/components/Application/ButtonLoading'
+import axios from 'axios'
+import { showToast } from '@/lib/showToast'
 
 const Header = () => {
     const auth = useSelector(store => store.authStore.auth)
     const [isMobileMenu, setIsMobileMenu] = useState(false)
     const [showSearch, setShowSearch] = useState(false)
+    const [isContactOpen, setIsContactOpen] = useState(false)
+    const [contactLoading, setContactLoading] = useState(false)
+    const [contactForm, setContactForm] = useState({ email: '', phone: '', query: '' })
+
+    const handleContactSubmit = async (e) => {
+        e.preventDefault()
+        setContactLoading(true)
+        try {
+            const { data: res } = await axios.post('/api/contact', contactForm)
+            if (!res.success) {
+                throw new Error(res.message)
+            }
+            const supportId = res?.data?.supportId
+            showToast('success', supportId ? `${res.message} Support ID: ${supportId}` : res.message)
+            setContactForm({ email: '', phone: '', query: '' })
+            setIsContactOpen(false)
+        } catch (error) {
+            showToast('error', error.message)
+        } finally {
+            setContactLoading(false)
+        }
+    }
     return (
         <div className='bg-white border-b lg:px-32 px-4'>
             <div className='flex justify-between items-center lg:py-5 py-3'>
@@ -62,7 +89,7 @@ const Header = () => {
                             </li>
                             <li className='text-gray-600 hover:text-primary hover:font-semibold'>
                                 <Link href="/about-us" className='block py-2'>
-                                    About
+                                    Our Journey
                                 </Link>
                             </li>
                             <li className='text-gray-600 hover:text-primary hover:font-semibold'>
@@ -71,19 +98,9 @@ const Header = () => {
                                 </Link>
                             </li>
                             <li className='text-gray-600 hover:text-primary hover:font-semibold'>
-                                <Link href={`${WEBSITE_SHOP}?category=t-shirts`} className='block py-2'>
-                                    T-shirt
-                                </Link>
-                            </li>
-                            <li className='text-gray-600 hover:text-primary hover:font-semibold'>
-                                <Link href={`${WEBSITE_SHOP}?category=hoodies`} className='block py-2'>
-                                    Hoodies
-                                </Link>
-                            </li>
-                            <li className='text-gray-600 hover:text-primary hover:font-semibold'>
-                                <Link href={`${WEBSITE_SHOP}?category=overshized`} className='block py-2'>
-                                    Oversized
-                                </Link>
+                                <button type='button' className='block py-2' onClick={() => setIsContactOpen(true)}>
+                                    Contact Us
+                                </button>
                             </li>
                         </ul>
                     </nav>
@@ -129,6 +146,46 @@ const Header = () => {
             </div>
 
             <Search isShow={showSearch} />
+
+            <Dialog open={isContactOpen} onOpenChange={setIsContactOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Contact Us</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleContactSubmit} className='space-y-4'>
+                        <div>
+                            <label className='text-sm font-medium'>Email</label>
+                            <Input
+                                type='email'
+                                value={contactForm.email}
+                                onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                                placeholder='Enter your email'
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className='text-sm font-medium'>Phone</label>
+                            <Input
+                                type='tel'
+                                value={contactForm.phone}
+                                onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
+                                placeholder='Enter your phone number'
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className='text-sm font-medium'>Query</label>
+                            <Textarea
+                                value={contactForm.query}
+                                onChange={(e) => setContactForm(prev => ({ ...prev, query: e.target.value }))}
+                                placeholder='Write your query'
+                                required
+                            />
+                        </div>
+                        <ButtonLoading loading={contactLoading} type='submit' text='Submit' className='w-full cursor-pointer' />
+                    </form>
+                </DialogContent>
+            </Dialog>
 
         </div>
     )

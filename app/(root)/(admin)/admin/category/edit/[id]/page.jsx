@@ -13,6 +13,10 @@ import slugify from 'slugify'
 import { showToast } from '@/lib/showToast'
 import axios from 'axios'
 import useFetch from '@/hooks/useFetch'
+import MediaModal from '@/components/Application/Admin/MediaModal'
+import Image from 'next/image'
+import { z } from 'zod'
+
 const breadcrumbData = [
     { href: ADMIN_DASHBOARD, label: 'Home' },
     { href: ADMIN_CATEGORY_SHOW, label: 'Category' },
@@ -28,7 +32,13 @@ const EditCategory = ({ params }) => {
     const [loading, setLoading] = useState(false)
     const formSchema = zSchema.pick({
         _id: true, name: true, slug: true
+    }).extend({
+        image: z.string().nullable().optional()
     })
+
+    // media modal states
+    const [open, setOpen] = useState(false)
+    const [selectedMedia, setSelectedMedia] = useState([])
 
     const form = useForm({
         resolver: zodResolver(formSchema),
@@ -36,9 +46,9 @@ const EditCategory = ({ params }) => {
             _id: id,
             name: "",
             slug: "",
+            image: null,
         },
     })
- 
 
 
     useEffect(() => {
@@ -47,8 +57,15 @@ const EditCategory = ({ params }) => {
             form.reset({
                 _id: data?._id,
                 name: data?.name,
-                slug: data?.slug
+                slug: data?.slug,
+                image: data?.image?._id || null
             })
+
+            if (data?.image?._id) {
+                setSelectedMedia([{ _id: data.image._id, url: data.image.secure_url }])
+            } else {
+                setSelectedMedia([])
+            }
         }
     }, [categoryData])
 
@@ -63,6 +80,7 @@ const EditCategory = ({ params }) => {
     const onSubmit = async (values) => {
         setLoading(true)
         try {
+            values.image = selectedMedia[0]?._id || null
             const { data: response } = await axios.put('/api/category/update', values)
             if (!response.success) {
                 throw new Error(response.message)
@@ -118,6 +136,37 @@ const EditCategory = ({ params }) => {
                                         </FormItem>
                                     )}
                                 />
+                            </div>
+
+                            <div className='md:col-span-2 border border-dashed rounded p-5 text-center'>
+                                <MediaModal
+                                    open={open}
+                                    setOpen={setOpen}
+                                    selectedMedia={selectedMedia}
+                                    setSelectedMedia={setSelectedMedia}
+                                    isMultiple={false}
+                                />
+
+                                {selectedMedia.length > 0
+                                    && <div className='flex justify-center items-center flex-wrap mb-3 gap-2'>
+                                        {selectedMedia.map(media => (
+                                            <div key={media._id} className='h-24 w-24 border'>
+                                                <Image
+                                                    src={media.url}
+                                                    height={100}
+                                                    width={100}
+                                                    alt=''
+                                                    className='size-full object-cover'
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                }
+
+                                <div onClick={() => setOpen(true)} className='bg-gray-50 dark:bg-card border w-[200px] mx-auto p-5 cursor-pointer'>
+                                    <span className='font-semibold'>Select Image</span>
+                                </div>
+
                             </div>
 
                             <div className='mb-3'>

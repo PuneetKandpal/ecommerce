@@ -7,18 +7,35 @@ import banner2 from '@/public/assets/images/banner2.png'
 import FeaturedProduct from '@/components/Application/Website/FeaturedProduct'
 import advertisingBanner from '@/public/assets/images/advertising-banner.png'
 import Testimonial from '@/components/Application/Website/Testimonial'
+import imgPlaceholder from '@/public/assets/images/img-placeholder.webp'
+import { WEBSITE_SHOP } from '@/routes/WebsiteRoute'
 
 import { GiReturnArrow } from "react-icons/gi";
 import { FaShippingFast } from "react-icons/fa";
 import { BiSupport } from "react-icons/bi";
 import { TbRosetteDiscountFilled } from "react-icons/tb";
 
-const Home = () => {
+export const dynamic = 'force-dynamic'
+
+const Home = async () => {
+    let categoryData = null
+    try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+            ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/category/get-category`
+            : `${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/category/get-category`
+
+        const res = await fetch(apiUrl, { cache: 'no-store' })
+        categoryData = await res.json()
+    } catch (error) {
+        console.log(error)
+    }
+
     return (
         <>
             <section>
                 <MainSlider />
             </section>
+
             <section className='lg:px-32 px-4 sm:pt-20 pt-5 pb-10'>
                 <div className='grid grid-cols-2 sm:gap-10 gap-2'>
 
@@ -47,6 +64,35 @@ const Home = () => {
 
                 </div>
             </section>
+
+            {categoryData?.success && categoryData?.data?.length > 0
+                &&
+                <section className='lg:px-32 px-4 sm:pt-10 pt-5 pb-10'>
+                    <div className='flex justify-between items-center mb-5'>
+                        <h2 className='sm:text-4xl text-2xl font-semibold'>Shop by Category</h2>
+                    </div>
+                    <div className='grid md:grid-cols-4 grid-cols-2 sm:gap-10 gap-2'>
+                        {categoryData.data.map((category) => (
+                            <Link
+                                key={category._id}
+                                href={`${WEBSITE_SHOP}?category=${category.slug}`}
+                                className='border rounded-lg overflow-hidden group'
+                            >
+                                <Image
+                                    src={category?.image?.secure_url || imgPlaceholder.src}
+                                    width={400}
+                                    height={300}
+                                    alt={category?.name || ''}
+                                    className='w-full h-[180px] object-cover transition-all group-hover:scale-110'
+                                />
+                                <div className='p-3 text-center font-semibold'>
+                                    {category?.name}
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </section>
+            }
 
             <FeaturedProduct />
 

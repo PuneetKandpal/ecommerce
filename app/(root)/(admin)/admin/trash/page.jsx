@@ -3,7 +3,7 @@ import BreadCrumb from "@/components/Application/Admin/BreadCrumb"
 import DatatableWrapper from "@/components/Application/Admin/DatatableWrapper"
 import DeleteAction from "@/components/Application/Admin/DeleteAction"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { DT_CATEGORY_COLUMN, DT_COUPON_COLUMN, DT_CUSTOMERS_COLUMN, DT_ORDER_COLUMN, DT_PRODUCT_COLUMN, DT_PRODUCT_VARIANT_COLUMN, DT_REVIEW_COLUMN } from "@/lib/column"
+import { DT_CATEGORY_COLUMN, DT_CONTACT_QUERY_COLUMN, DT_COUPON_COLUMN, DT_CUSTOMERS_COLUMN, DT_ORDER_COLUMN, DT_PRODUCT_COLUMN, DT_PRODUCT_VARIANT_COLUMN, DT_REVIEW_COLUMN } from "@/lib/column"
 import { columnConfig } from "@/lib/helperFunction"
 import { ADMIN_DASHBOARD, ADMIN_TRASH } from "@/routes/AdminPanelRoute"
 
@@ -65,6 +65,14 @@ const TRASH_CONFIG = {
         fetchUrl: '/api/orders',
         exportUrl: '/api/orders/export',
         deleteUrl: '/api/orders/delete'
+    },
+
+    "contact-query": {
+        title: 'Contact Query Trash',
+        columns: DT_CONTACT_QUERY_COLUMN,
+        fetchUrl: '/api/contact-query',
+        exportUrl: '/api/contact-query/export',
+        deleteUrl: '/api/contact-query/delete'
     },
 
 }

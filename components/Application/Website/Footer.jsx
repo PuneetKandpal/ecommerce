@@ -30,24 +30,14 @@ const Footer = () => {
                     </p>
                 </div>
 
-
                 <div>
-                    <h4 className='text-xl font-bold uppercase mb-5'>Categories</h4>
+                    <h4 className='text-xl font-bold uppercase mb-5'>Company</h4>
                     <ul>
                         <li className='mb-2 text-gray-500'>
-                            <Link href={`${WEBSITE_SHOP}?category=t-shirts`}>T-shirt</Link>
+                            <Link href="/about-us">Our Journey</Link>
                         </li>
                         <li className='mb-2 text-gray-500'>
-                            <Link href={`${WEBSITE_SHOP}?category=hoodies`}>Hoodies</Link>
-                        </li>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href={`${WEBSITE_SHOP}?category=oversized`}>Oversized</Link>
-                        </li>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href={`${WEBSITE_SHOP}?category=full-sleeves`}>Full Sleeves</Link>
-                        </li>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href={`${WEBSITE_SHOP}?category=polo`}>Polo</Link>
+                            <Link href={WEBSITE_SHOP}>Shop</Link>
                         </li>
                     </ul>
                 </div>

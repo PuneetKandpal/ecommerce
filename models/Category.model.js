@@ -14,6 +14,12 @@ const categorySchema = new mongoose.Schema({
         trim: true
     },
 
+    image: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Media',
+        default: null
+    },
+
     deletedAt: {
         type: Date,
         default: null,
@@ -21,7 +27,6 @@ const categorySchema = new mongoose.Schema({
     },
 
 }, { timestamps: true })
-
 
 const CategoryModel = mongoose.models.Category || mongoose.model('Category', categorySchema, 'categories')
 export default CategoryModel

@@ -43,6 +43,11 @@ export const ADMIN_REVIEW_SHOW = '/admin/review'
 export const ADMIN_ORDER_SHOW = '/admin/orders'
 export const ADMIN_ORDER_DETAILS = (order_id) => order_id ? `/admin/orders/details/${order_id}` : ''
 
+// Contact queries route
+export const ADMIN_CONTACT_QUERY_SHOW = '/admin/contact-query'
+
+// Site configuration route
+export const ADMIN_SITE_CONFIGURATION = '/admin/site-configuration'
 
 // Trash route 
 
