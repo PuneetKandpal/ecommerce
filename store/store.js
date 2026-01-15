@@ -4,6 +4,23 @@ import persistStore from "redux-persist/es/persistStore"
 import localStorage from "redux-persist/es/storage"
 import authReducer from "./reducer/authReducer"
 import cartReducer  from "./reducer/cartReducer"
+import createWebStorage from "redux-persist/lib/storage/createWebStorage"
+
+const createNoopStorage = () => {
+    return {
+        getItem(_key) {
+            return Promise.resolve(null)
+        },
+        setItem(_key, value) {
+            return Promise.resolve(value)
+        },
+        removeItem(_key) {
+            return Promise.resolve()
+        },
+    }
+}
+
+const storage = typeof window !== "undefined" ? localStorage : createNoopStorage()
 
 const rootReducer = combineReducers({
     authStore: authReducer,
@@ -13,7 +30,7 @@ const rootReducer = combineReducers({
 
 const persistConfig = {
     key: 'root',
-    storage: localStorage
+    storage: storage
 }
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)

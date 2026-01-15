@@ -20,14 +20,26 @@ export const dynamic = 'force-dynamic'
 const Home = async () => {
     let categoryData = null
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL
-            ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/category/get-category`
-            : `${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/category/get-category`
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+        const apiUrl = `${baseUrl}/api/category/get-category`
 
-        const res = await fetch(apiUrl, { cache: 'no-store' })
-        categoryData = await res.json()
+        const res = await fetch(apiUrl, { 
+            cache: 'no-store',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        
+        if (!res.ok) {
+            console.error('Category fetch failed:', res.status, res.statusText)
+            categoryData = null
+        } else {
+            categoryData = await res.json()
+            console.log('Category data fetched:', categoryData?.data?.length || 0, 'categories')
+        }
     } catch (error) {
-        console.log(error)
+        console.error('Category fetch error:', error.message)
+        categoryData = null
     }
 
     return (
