@@ -4,12 +4,20 @@ import ProductDetails from './ProductDetails'
 
 const ProductPage = async ({ params, searchParams }) => {
     const { slug } = await params
-    const { color, size } = await searchParams
+    const resolvedSearchParams = await searchParams
 
     let url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/product/details/${slug}`
 
-    if (color && size) {
-        url += `?color=${color}&size=${size}`
+    // Build query string from all search params for dynamic attributes
+    const queryParams = new URLSearchParams()
+    if (resolvedSearchParams && typeof resolvedSearchParams === 'object') {
+        Object.entries(resolvedSearchParams).forEach(([key, value]) => {
+            if (value) queryParams.set(key, value)
+        })
+    }
+    const queryString = queryParams.toString()
+    if (queryString) {
+        url += `?${queryString}`
     }
 
     const { data: getProduct } = await axios.get(url)
@@ -26,8 +34,8 @@ const ProductPage = async ({ params, searchParams }) => {
             <ProductDetails
                 product={getProduct?.data?.product}
                 variant={getProduct?.data?.variant}
-                colors={getProduct?.data?.colors}
-                sizes={getProduct?.data?.sizes}
+                attributeOptions={getProduct?.data?.attributeOptions}
+                selectedAttributes={getProduct?.data?.selectedAttributes}
                 reviewCount={getProduct?.data?.reviewCount}
             />
         )

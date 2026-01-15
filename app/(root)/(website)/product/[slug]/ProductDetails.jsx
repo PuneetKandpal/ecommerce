@@ -23,7 +23,7 @@ import { showToast } from "@/lib/showToast";
 import { Button } from "@/components/ui/button";
 import loadingSvg from '@/public/assets/images/loading.svg'
 import ProductReveiw from "@/components/Application/Website/ProductReveiw";
-const ProductDetails = ({ product, variant, colors, sizes, reviewCount }) => {
+const ProductDetails = ({ product, variant, attributeOptions, selectedAttributes, reviewCount }) => {
 
     const dispatch = useDispatch()
     const cartStore = useSelector(store => store.cartStore)
@@ -72,8 +72,7 @@ const ProductDetails = ({ product, variant, colors, sizes, reviewCount }) => {
             variantId: variant._id,
             name: product.name,
             url: product.slug,
-            size: variant.size,
-            color: variant.color,
+            attributes: variant.attributes || {},
             mrp: variant.mrp,
             sellingPrice: variant.sellingPrice,
             media: variant?.media[0]?.secure_url,
@@ -161,36 +160,58 @@ const ProductDetails = ({ product, variant, colors, sizes, reviewCount }) => {
                     <div className="line-clamp-3" dangerouslySetInnerHTML={{ __html: decode(product.description) }}></div>
 
 
-                    <div className="mt-5">
-                        <p className="mb-2">
-                            <span className="font-semibold">Color: </span> {variant?.color}
-                        </p>
-                        <div className="flex gap-5">
-                            {colors.map(color => (
-                                <Link onClick={() => setIsProductLoading(true)} href={`${WEBSITE_PRODUCT_DETAILS(product.slug)}?color=${color}&size=${variant.size}`}
-                                    key={color}
-                                    className={`border py-1 px-3 rounded-lg cursor-pointer hover:bg-primary hover:text-white ${color === variant.color ? 'bg-primary text-white' : ''}`}
-                                >
-                                    {color}
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="mt-5">
-                        <p className="mb-2">
-                            <span className="font-semibold">Size: </span> {variant?.size}
-                        </p>
-                        <div className="flex gap-5">
-                            {sizes.map(size => (
-                                <Link onClick={() => setIsProductLoading(true)} href={`${WEBSITE_PRODUCT_DETAILS(product.slug)}?color=${variant.color}&size=${size}`}
-                                    key={size}
-                                    className={`border py-1 px-3 rounded-lg cursor-pointer hover:bg-primary hover:text-white ${size === variant.size ? 'bg-primary text-white' : ''}`}
-                                >
-                                    {size}
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
+                    {/* Dynamic Variant Attribute Selectors */}
+                    {product.variantConfig?.attributes && Array.isArray(product.variantConfig.attributes) && product.variantConfig.attributes.map((attrConfig) => {
+                        const attrKey = attrConfig.key
+                        const attrLabel = attrConfig.label
+                        const attrUnit = attrConfig.unit
+                        const currentValue = variant?.attributes?.[attrKey] || selectedAttributes?.[attrKey] || ''
+                        const availableOptions = attributeOptions[attrKey] || []
+
+                        if (availableOptions.length === 0) return null
+
+                        // Build URL with all current attributes except the one being changed
+                        const buildUrlForOption = (optionValue) => {
+                            const params = new URLSearchParams()
+                            // Add all current selected attributes
+                            if (product.variantConfig?.attributes) {
+                                product.variantConfig.attributes.forEach(attr => {
+                                    if (attr.key === attrKey) {
+                                        params.set(attr.key, optionValue)
+                                    } else {
+                                        const existingValue = selectedAttributes?.[attr.key] || variant?.attributes?.[attr.key]
+                                        if (existingValue) {
+                                            params.set(attr.key, existingValue)
+                                        }
+                                    }
+                                })
+                            }
+                            return `${WEBSITE_PRODUCT_DETAILS(product.slug)}?${params.toString()}`
+                        }
+
+                        return (
+                            <div key={attrKey} className="mt-5">
+                                <p className="mb-2">
+                                    <span className="font-semibold">{attrLabel}: </span>
+                                    {currentValue}{attrUnit ? ` ${attrUnit}` : ''}
+                                </p>
+                                <div className="flex gap-3 flex-wrap">
+                                    {availableOptions.map(optionValue => (
+                                        <Link
+                                            onClick={() => setIsProductLoading(true)}
+                                            href={buildUrlForOption(optionValue)}
+                                            key={optionValue}
+                                            className={`border py-1 px-3 rounded-lg cursor-pointer hover:bg-primary hover:text-white ${
+                                                String(optionValue) === String(currentValue) ? 'bg-primary text-white' : ''
+                                            }`}
+                                        >
+                                            {optionValue}{attrUnit ? ` ${attrUnit}` : ''}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )
+                    })}
 
                     <div className="mt-5">
                         <p className="font-bold mb-2">Quantity</p>

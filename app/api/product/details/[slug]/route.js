@@ -14,9 +14,6 @@ export async function GET(request, { params }) {
         const slug = getParams.slug
 
         const searchParams = request.nextUrl.searchParams
-        const size = searchParams.get('size')
-        const color = searchParams.get('color')
-
 
         const filter = {
             deletedAt: null
@@ -35,52 +32,57 @@ export async function GET(request, { params }) {
             return response(false, 404, 'Product not found.')
         }
 
-        // get product variant 
+        // Build variant filter from dynamic attributes in query params
         const variantFilter = {
             product: getProduct._id
         }
 
-        if (size) {
-            variantFilter.size = size
-        }
-        if (color) {
-            variantFilter.color = color
+        // If product has variantConfig, build attribute filters from query params
+        const variantConfig = getProduct.variantConfig
+        const selectedAttributes = {}
+        if (variantConfig?.attributes && Array.isArray(variantConfig.attributes)) {
+            variantConfig.attributes.forEach(attr => {
+                const paramValue = searchParams.get(attr.key)
+                if (paramValue) {
+                    selectedAttributes[attr.key] = paramValue
+                    variantFilter[`attributes.${attr.key}`] = paramValue
+                }
+            })
         }
 
-        const variant = await ProductVariantModel.findOne(variantFilter).populate('media', 'secure_url').lean()
+        // Find variant matching selected attributes, or first variant if none selected
+        let variant = await ProductVariantModel.findOne(variantFilter).populate('media', 'secure_url').lean()
+        
+        if (!variant) {
+            // If no exact match, try to find first available variant
+            variant = await ProductVariantModel.findOne({ product: getProduct._id }).populate('media', 'secure_url').lean()
+        }
 
         if (!variant) {
             return response(false, 404, 'Product not found.')
         }
 
-        // get color and size 
-
-        const getColor = await ProductVariantModel.distinct('color', { product: getProduct._id })
-
-        const getSize = await ProductVariantModel.aggregate([
-            { $match: { product: getProduct._id } },
-            { $sort: { _id: 1 } },
-            {
-                $group: {
-                    _id: "$size",
-                    first: { $first: "$_id" }
-                }
-            },
-            { $sort: { first: 1 } },
-            { $project: { _id: 0, size: "$_id" } }
-        ])
-
+        // Get available options for each dynamic attribute
+        const attributeOptions = {}
+        if (variantConfig?.attributes && Array.isArray(variantConfig.attributes)) {
+            for (const attr of variantConfig.attributes) {
+                const distinctValues = await ProductVariantModel.distinct(
+                    `attributes.${attr.key}`,
+                    { product: getProduct._id }
+                )
+                attributeOptions[attr.key] = distinctValues.filter(Boolean)
+            }
+        }
 
         // get review  
 
         const review = await ReviewModel.countDocuments({ product: getProduct._id })
 
-
         const productData = {
             product: getProduct,
             variant: variant,
-            colors: getColor,
-            sizes: getSize.length ? getSize.map(item => item.size) : [],
+            attributeOptions: attributeOptions,
+            selectedAttributes: selectedAttributes,
             reviewCount: review
         }
 

@@ -118,7 +118,12 @@ const VariantConfigEditor = ({ value, onChange }) => {
                 const unitValue = attr?.unit ?? ''
                 const requiredValue = attr?.required !== false
                 const typeValue = attr?.type || 'text'
-                const optionsValue = Array.isArray(attr?.options) ? attr.options.join(', ') : ''
+                const optionsValue =
+                    typeof attr?.optionsText === 'string'
+                        ? attr.optionsText
+                        : Array.isArray(attr?.options)
+                            ? attr.options.join(', ')
+                            : ''
 
                 return (
                     <div key={idx} className="rounded border p-3 space-y-3">
@@ -155,7 +160,7 @@ const VariantConfigEditor = ({ value, onChange }) => {
                                     onValueChange={(val) => {
                                         const nextType = val
                                         if (nextType !== 'select') {
-                                            updateAttr(idx, { type: nextType, options: [] })
+                                            updateAttr(idx, { type: nextType, options: [], optionsText: '' })
                                         } else {
                                             updateAttr(idx, { type: nextType })
                                         }
@@ -198,7 +203,12 @@ const VariantConfigEditor = ({ value, onChange }) => {
                                 <Input
                                     value={optionsValue}
                                     placeholder="e.g. 32, 40, 50"
-                                    onChange={(e) => updateAttr(idx, { options: normalizeOptions(e.target.value) })}
+                                    onChange={(e) =>
+                                        updateAttr(idx, {
+                                            optionsText: e.target.value,
+                                            options: normalizeOptions(e.target.value),
+                                        })
+                                    }
                                 />
                             </div>
                         )}
