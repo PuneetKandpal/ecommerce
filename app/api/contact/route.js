@@ -1,9 +1,9 @@
 import { connectDB } from "@/lib/databaseConnection";
 import { catchError, response } from "@/lib/helperFunction";
+import { getMergedSiteConfig } from "@/lib/getSiteConfig";
 import { sendMail } from "@/lib/sendMail";
 import { zSchema } from "@/lib/zodSchema";
 import ContactQueryModel from "@/models/ContactQuery.model";
-import SiteConfigModel from "@/models/SiteConfig.model";
 import { z } from "zod";
 
 const SUPPORT_ID_LENGTH = 10
@@ -61,7 +61,7 @@ export async function POST(request) {
 
         await doc.save()
 
-        const config = await SiteConfigModel.findOne({}).sort({ createdAt: -1 }).lean()
+        const config = await getMergedSiteConfig({ includeLegacyFallback: true })
         const isMailConfigured = !!(process.env.NODEMAILER_HOST && process.env.NODEMAILER_EMAIL && process.env.NODEMAILER_PASSWORD)
         const adminRecipients = (config?.contactNotificationEmails?.length ? config.contactNotificationEmails : [process.env.NODEMAILER_EMAIL])
             .filter(Boolean)

@@ -1,8 +1,11 @@
 import { isAuthenticated } from "@/lib/authentication";
 import { connectDB } from "@/lib/databaseConnection";
 import { catchError, response } from "@/lib/helperFunction";
+import { getMergedSiteConfig } from "@/lib/getSiteConfig";
 import SiteConfigModel from "@/models/SiteConfig.model";
 import { z } from "zod";
+
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
     try {
@@ -11,9 +14,7 @@ export async function GET() {
             return response(false, 403, 'Unauthorized.')
         }
 
-        await connectDB()
-
-        const config = await SiteConfigModel.findOne({}).sort({ createdAt: -1 }).populate('invoiceTemplateMedia').lean()
+        const config = await getMergedSiteConfig({ populateMedia: true, includeLegacyFallback: true })
 
         return response(true, 200, 'Site config found.', config || null)
 
@@ -48,7 +49,18 @@ export async function PUT(request) {
                 pincode: z.string().optional().default(''),
                 country: z.string().optional().default(''),
             }).optional().default({}),
+            bankDetails: z.object({
+                accountName: z.string().optional().default(''),
+                accountNumber: z.string().optional().default(''),
+                bankName: z.string().optional().default(''),
+                ifsc: z.string().optional().default(''),
+                branch: z.string().optional().default(''),
+                upiId: z.string().optional().default(''),
+            }).optional().default({}),
+            invoiceTerms: z.string().optional().default(''),
+            invoiceFooterNote: z.string().optional().default(''),
             invoiceTemplateMedia: z.string().nullable().optional().default(null),
+            shippingLabelTemplateMedia: z.string().nullable().optional().default(null),
             sendContactCopyToUser: z.boolean().optional().default(false),
         })
 
@@ -66,11 +78,20 @@ export async function PUT(request) {
                     contactNotificationEmails: data.contactNotificationEmails,
                     orderNotificationEmails: data.orderNotificationEmails,
                     invoiceCompany: data.invoiceCompany,
+                    bankDetails: data.bankDetails,
+                    invoiceTerms: data.invoiceTerms,
+                    invoiceFooterNote: data.invoiceFooterNote,
                     invoiceTemplateMedia: data.invoiceTemplateMedia,
+                    shippingLabelTemplateMedia: data.shippingLabelTemplateMedia,
                     sendContactCopyToUser: data.sendContactCopyToUser,
                 }
             },
-            { new: true, upsert: true }
+            {
+                new: true,
+                upsert: true,
+                setDefaultsOnInsert: true,
+                sort: { updatedAt: -1, createdAt: -1 },
+            }
         ).lean()
 
         return response(true, 200, 'Site config updated.', updated)

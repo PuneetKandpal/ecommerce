@@ -43,6 +43,7 @@ const months = [
     "July",
     "August",
     "September",
+    "October",
     "November",
     "December",
 ]

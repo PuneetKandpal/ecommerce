@@ -1,10 +1,10 @@
 import { isAuthenticated } from "@/lib/authentication";
 import { connectDB } from "@/lib/databaseConnection";
 import { catchError, response } from "@/lib/helperFunction";
+import { getMergedSiteConfig } from "@/lib/getSiteConfig";
 import { sendMail } from "@/lib/sendMail";
 import { zSchema } from "@/lib/zodSchema";
 import OrderModel from "@/models/Order.model";
-import SiteConfigModel from "@/models/SiteConfig.model";
 import crypto from "crypto";
 import { z } from "zod";
 import { orderPlacedAdminEmail } from "@/email/orderPlacedAdminEmail";
@@ -107,7 +107,7 @@ export async function POST(request) {
         }
 
         try {
-            const config = await SiteConfigModel.findOne({}).sort({ createdAt: -1 }).lean();
+            const config = await getMergedSiteConfig({ includeLegacyFallback: true });
             const recipients = (config?.orderNotificationEmails || []).filter(Boolean);
             const receiver = recipients.length ? recipients.join(',') : process.env.NODEMAILER_EMAIL;
 

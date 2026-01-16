@@ -21,7 +21,30 @@ const siteConfigSchema = new mongoose.Schema({
         pincode: { type: String, default: '' },
         country: { type: String, default: '' },
     },
+    bankDetails: {
+        accountName: { type: String, default: '' },
+        accountNumber: { type: String, default: '' },
+        bankName: { type: String, default: '' },
+        ifsc: { type: String, default: '' },
+        branch: { type: String, default: '' },
+        upiId: { type: String, default: '' },
+    },
+    invoiceTerms: {
+        type: String,
+        default: '',
+        trim: true,
+    },
+    invoiceFooterNote: {
+        type: String,
+        default: '',
+        trim: true,
+    },
     invoiceTemplateMedia: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Media',
+        default: null,
+    },
+    shippingLabelTemplateMedia: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Media',
         default: null,
@@ -32,5 +55,9 @@ const siteConfigSchema = new mongoose.Schema({
     },
 }, { timestamps: true })
 
-const SiteConfigModel = mongoose.models.SiteConfig || mongoose.model('SiteConfig', siteConfigSchema, 'site_configs')
+if (mongoose.models.SiteConfig) {
+    delete mongoose.models.SiteConfig;
+}
+
+const SiteConfigModel = mongoose.model('SiteConfig', siteConfigSchema, 'site_configs')
 export default SiteConfigModel

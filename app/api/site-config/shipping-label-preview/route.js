@@ -1,15 +1,14 @@
 import React from "react";
 import { isAuthenticated } from "@/lib/authentication";
 import { connectDB } from "@/lib/databaseConnection";
-import { getMergedSiteConfig } from "@/lib/getSiteConfig";
 import { catchError } from "@/lib/helperFunction";
+import { getMergedSiteConfig } from "@/lib/getSiteConfig";
 import ShippingLabelDocument from "@/lib/react-pdf/ShippingLabelDocument";
 import { renderPdfResponse } from "@/lib/react-pdf/renderPdf";
-import OrderModel from "@/models/Order.model";
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(_request, { params }) {
+export async function GET() {
     try {
         const auth = await isAuthenticated('admin');
         if (!auth.isAuth) {
@@ -17,20 +16,22 @@ export async function GET(_request, { params }) {
         }
 
         await connectDB();
-        const orderid = (await params)?.orderid;
-
-        if (!orderid) {
-            return new Response('Order not found', { status: 404 });
-        }
-
-        const order = await OrderModel.findOne({ order_id: orderid, deletedAt: null }).lean();
-        if (!order) {
-            return new Response('Order not found', { status: 404 });
-        }
 
         const config = await getMergedSiteConfig({ populateMedia: true, includeLegacyFallback: true });
-        const element = React.createElement(ShippingLabelDocument, { order, config });
-        return await renderPdfResponse({ element, filename: `shipping-label-${order.order_id}.pdf` });
+
+        const dummyOrder = {
+            order_id: 'ORD-PREVIEW-0001',
+            name: 'Customer Name',
+            phone: '9999999999',
+            landmark: '123 Example Street, Near Landmark',
+            city: 'Pune',
+            state: 'Maharashtra',
+            pincode: '411001',
+            country: 'India',
+        };
+
+        const element = React.createElement(ShippingLabelDocument, { order: dummyOrder, config });
+        return await renderPdfResponse({ element, filename: 'shipping-label-preview.pdf' });
     } catch (error) {
         return catchError(error);
     }

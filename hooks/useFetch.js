@@ -7,9 +7,10 @@ const useFetch = (url, method = "GET", options = {}) => {
     const [error, setError] = useState(null)
     const [refreshIndex, setRefreshIndex] = useState(0)
 
-    const optionsString = JSON.stringify(options)
+    const optionsString = useMemo(() => JSON.stringify(options || {}), [options])
+
     const requestOptions = useMemo(() => {
-        const opts = { ...options }
+        const opts = optionsString ? JSON.parse(optionsString) : {}
         if (method === 'POST' && !opts.data) {
             opts.data = {}
         }
@@ -33,7 +34,8 @@ const useFetch = (url, method = "GET", options = {}) => {
 
                 setData(response)
             } catch (error) {
-                setError(error.message)
+                const apiMessage = error?.response?.data?.message
+                setError(apiMessage || error.message)
             } finally {
                 setLoading(false)
             }
@@ -41,7 +43,7 @@ const useFetch = (url, method = "GET", options = {}) => {
 
         apiCall()
 
-    }, [url, refreshIndex, requestOptions])
+    }, [url, method, refreshIndex, requestOptions])
 
 
     const refetch = () => {

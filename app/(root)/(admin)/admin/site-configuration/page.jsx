@@ -23,25 +23,72 @@ const breadcrumbData = [
 ]
 
 const SiteConfiguration = () => {
-  const [loading, setLoading] = useState(false)
+  const [loadingNotifications, setLoadingNotifications] = useState(false)
+  const [loadingInvoice, setLoadingInvoice] = useState(false)
+  const [loadingBank, setLoadingBank] = useState(false)
+  const [loadingShipping, setLoadingShipping] = useState(false)
+  const [loadingGeneral, setLoadingGeneral] = useState(false)
   const [invoiceMediaOpen, setInvoiceMediaOpen] = useState(false)
   const [invoiceSelectedMedia, setInvoiceSelectedMedia] = useState([])
+  const [shippingMediaOpen, setShippingMediaOpen] = useState(false)
+  const [shippingSelectedMedia, setShippingSelectedMedia] = useState([])
+
+  const [baseline, setBaseline] = useState(null)
+
+  const emailOrEmpty = z.union([z.string().email('Invalid email.'), z.literal('')])
+  const phoneOrEmpty = z.union([
+    z.string().regex(/^\d{10,15}$/, 'Phone must be 10 to 15 digits.'),
+    z.literal('')
+  ])
+  const gstinOrEmpty = z.union([
+    z.string().regex(/^[0-9A-Z]{15}$/, 'GSTIN must be 15 characters.'),
+    z.literal('')
+  ])
+  const pincodeOrEmpty = z.union([
+    z.string().regex(/^\d{6}$/, 'Pincode must be 6 digits.'),
+    z.literal('')
+  ])
+  const accountNumberOrEmpty = z.union([
+    z.string().regex(/^\d{9,18}$/, 'Account number must be 9 to 18 digits.'),
+    z.literal('')
+  ])
+  const ifscOrEmpty = z.union([
+    z.string().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, 'Invalid IFSC.'),
+    z.literal('')
+  ])
+  const upiOrEmpty = z.union([
+    z.string().regex(/^[\w.\-]{2,256}@[\w]{2,64}$/, 'Invalid UPI ID.'),
+    z.literal('')
+  ])
+  const objectIdOrNull = z.union([
+    z.string().regex(/^[a-fA-F0-9]{24}$/, 'Invalid media id.'),
+    z.null(),
+  ])
 
   const formSchema = z.object({
     contactNotificationEmailsText: z.string().optional(),
     orderNotificationEmailsText: z.string().optional(),
     sendContactCopyToUser: z.boolean().optional(),
-    invoiceCompanyName: z.string().optional(),
-    invoiceCompanyEmail: z.string().optional(),
-    invoiceCompanyPhone: z.string().optional(),
-    invoiceCompanyGstin: z.string().optional(),
-    invoiceCompanyAddressLine1: z.string().optional(),
-    invoiceCompanyAddressLine2: z.string().optional(),
-    invoiceCompanyCity: z.string().optional(),
-    invoiceCompanyState: z.string().optional(),
-    invoiceCompanyPincode: z.string().optional(),
-    invoiceCompanyCountry: z.string().optional(),
-    invoiceTemplateMedia: z.string().nullable().optional(),
+    invoiceCompanyName: z.string().trim().optional(),
+    invoiceCompanyEmail: emailOrEmpty.optional(),
+    invoiceCompanyPhone: phoneOrEmpty.optional(),
+    invoiceCompanyGstin: gstinOrEmpty.optional(),
+    invoiceCompanyAddressLine1: z.string().trim().optional(),
+    invoiceCompanyAddressLine2: z.string().trim().optional(),
+    invoiceCompanyCity: z.string().trim().optional(),
+    invoiceCompanyState: z.string().trim().optional(),
+    invoiceCompanyPincode: pincodeOrEmpty.optional(),
+    invoiceCompanyCountry: z.string().trim().optional(),
+    bankAccountName: z.string().trim().optional(),
+    bankAccountNumber: accountNumberOrEmpty.optional(),
+    bankBankName: z.string().trim().optional(),
+    bankIfsc: ifscOrEmpty.optional(),
+    bankBranch: z.string().trim().optional(),
+    bankUpiId: upiOrEmpty.optional(),
+    invoiceTerms: z.string().optional(),
+    invoiceFooterNote: z.string().optional(),
+    invoiceTemplateMedia: objectIdOrNull.optional(),
+    shippingLabelTemplateMedia: objectIdOrNull.optional(),
   })
 
   const form = useForm({
@@ -60,59 +107,183 @@ const SiteConfiguration = () => {
       invoiceCompanyState: '',
       invoiceCompanyPincode: '',
       invoiceCompanyCountry: '',
+      bankAccountName: '',
+      bankAccountNumber: '',
+      bankBankName: '',
+      bankIfsc: '',
+      bankBranch: '',
+      bankUpiId: '',
+      invoiceTerms: '',
+      invoiceFooterNote: '',
       invoiceTemplateMedia: null,
+      shippingLabelTemplateMedia: null,
     },
   })
 
-  const { data, refetch } = useFetch('/api/site-config')
+  const { data, error: configError, refetch } = useFetch('/api/site-config')
 
   useEffect(() => {
     if (data?.success && data.data) {
       const config = data.data
-      const emails = (config?.contactNotificationEmails || []).join('\n')
-      const orderEmails = (config?.orderNotificationEmails || []).join('\n')
-      
-      form.reset({
-        contactNotificationEmailsText: emails,
-        orderNotificationEmailsText: orderEmails,
-        sendContactCopyToUser: !!config?.sendContactCopyToUser,
-        invoiceCompanyName: config?.invoiceCompany?.name || '',
-        invoiceCompanyEmail: config?.invoiceCompany?.email || '',
-        invoiceCompanyPhone: config?.invoiceCompany?.phone || '',
-        invoiceCompanyGstin: config?.invoiceCompany?.gstin || '',
-        invoiceCompanyAddressLine1: config?.invoiceCompany?.addressLine1 || '',
-        invoiceCompanyAddressLine2: config?.invoiceCompany?.addressLine2 || '',
-        invoiceCompanyCity: config?.invoiceCompany?.city || '',
-        invoiceCompanyState: config?.invoiceCompany?.state || '',
-        invoiceCompanyPincode: config?.invoiceCompany?.pincode || '',
-        invoiceCompanyCountry: config?.invoiceCompany?.country || '',
-        invoiceTemplateMedia: config?.invoiceTemplateMedia?._id || null,
-      })
-
-      if (config?.invoiceTemplateMedia?._id) {
-        setInvoiceSelectedMedia([{ _id: config.invoiceTemplateMedia._id, url: config.invoiceTemplateMedia.secure_url }])
-      } else {
-        setInvoiceSelectedMedia([])
-      }
+      setBaseline(config)
+      applyBaselineToForm(config)
     }
   }, [data])
 
-  const onSubmit = async (values) => {
-    setLoading(true)
+  const parseEmails = (value) => {
+    return (value || '')
+      .split(/[\n,]+/)
+      .map((e) => e.trim())
+      .filter(Boolean)
+  }
+
+  const applyBaselineToForm = (config) => {
+    if (!config) return
+
+    const emails = (config?.contactNotificationEmails || []).join('\n')
+    const orderEmails = (config?.orderNotificationEmails || []).join('\n')
+
+    form.reset({
+      contactNotificationEmailsText: emails,
+      orderNotificationEmailsText: orderEmails,
+      sendContactCopyToUser: !!config?.sendContactCopyToUser,
+      invoiceCompanyName: config?.invoiceCompany?.name || '',
+      invoiceCompanyEmail: config?.invoiceCompany?.email || '',
+      invoiceCompanyPhone: config?.invoiceCompany?.phone || '',
+      invoiceCompanyGstin: config?.invoiceCompany?.gstin || '',
+      invoiceCompanyAddressLine1: config?.invoiceCompany?.addressLine1 || '',
+      invoiceCompanyAddressLine2: config?.invoiceCompany?.addressLine2 || '',
+      invoiceCompanyCity: config?.invoiceCompany?.city || '',
+      invoiceCompanyState: config?.invoiceCompany?.state || '',
+      invoiceCompanyPincode: config?.invoiceCompany?.pincode || '',
+      invoiceCompanyCountry: config?.invoiceCompany?.country || '',
+      bankAccountName: config?.bankDetails?.accountName || '',
+      bankAccountNumber: config?.bankDetails?.accountNumber || '',
+      bankBankName: config?.bankDetails?.bankName || '',
+      bankIfsc: config?.bankDetails?.ifsc || '',
+      bankBranch: config?.bankDetails?.branch || '',
+      bankUpiId: config?.bankDetails?.upiId || '',
+      invoiceTerms: config?.invoiceTerms || '',
+      invoiceFooterNote: config?.invoiceFooterNote || '',
+      invoiceTemplateMedia: config?.invoiceTemplateMedia?._id || null,
+      shippingLabelTemplateMedia: config?.shippingLabelTemplateMedia?._id || null,
+    })
+
+    if (config?.invoiceTemplateMedia?._id) {
+      setInvoiceSelectedMedia([{ _id: config.invoiceTemplateMedia._id, url: config.invoiceTemplateMedia.secure_url }])
+    } else {
+      setInvoiceSelectedMedia([])
+    }
+
+    if (config?.shippingLabelTemplateMedia?._id) {
+      setShippingSelectedMedia([{ _id: config.shippingLabelTemplateMedia._id, url: config.shippingLabelTemplateMedia.secure_url }])
+    } else {
+      setShippingSelectedMedia([])
+    }
+  }
+
+  const cancelNotifications = () => {
+    if (!baseline) return
+    form.setValue('contactNotificationEmailsText', (baseline?.contactNotificationEmails || []).join('\n'))
+    form.setValue('orderNotificationEmailsText', (baseline?.orderNotificationEmails || []).join('\n'))
+  }
+
+  const cancelInvoice = () => {
+    if (!baseline) return
+    form.setValue('invoiceCompanyName', baseline?.invoiceCompany?.name || '')
+    form.setValue('invoiceCompanyEmail', baseline?.invoiceCompany?.email || '')
+    form.setValue('invoiceCompanyPhone', baseline?.invoiceCompany?.phone || '')
+    form.setValue('invoiceCompanyGstin', baseline?.invoiceCompany?.gstin || '')
+    form.setValue('invoiceCompanyAddressLine1', baseline?.invoiceCompany?.addressLine1 || '')
+    form.setValue('invoiceCompanyAddressLine2', baseline?.invoiceCompany?.addressLine2 || '')
+    form.setValue('invoiceCompanyCity', baseline?.invoiceCompany?.city || '')
+    form.setValue('invoiceCompanyState', baseline?.invoiceCompany?.state || '')
+    form.setValue('invoiceCompanyPincode', baseline?.invoiceCompany?.pincode || '')
+    form.setValue('invoiceCompanyCountry', baseline?.invoiceCompany?.country || '')
+    form.setValue('invoiceTerms', baseline?.invoiceTerms || '')
+    form.setValue('invoiceFooterNote', baseline?.invoiceFooterNote || '')
+    form.setValue('invoiceTemplateMedia', baseline?.invoiceTemplateMedia?._id || null)
+
+    if (baseline?.invoiceTemplateMedia?._id) {
+      setInvoiceSelectedMedia([{ _id: baseline.invoiceTemplateMedia._id, url: baseline.invoiceTemplateMedia.secure_url }])
+    } else {
+      setInvoiceSelectedMedia([])
+    }
+  }
+
+  const cancelBank = () => {
+    if (!baseline) return
+    form.setValue('bankAccountName', baseline?.bankDetails?.accountName || '')
+    form.setValue('bankAccountNumber', baseline?.bankDetails?.accountNumber || '')
+    form.setValue('bankBankName', baseline?.bankDetails?.bankName || '')
+    form.setValue('bankIfsc', baseline?.bankDetails?.ifsc || '')
+    form.setValue('bankBranch', baseline?.bankDetails?.branch || '')
+    form.setValue('bankUpiId', baseline?.bankDetails?.upiId || '')
+  }
+
+  const cancelShipping = () => {
+    if (!baseline) return
+    form.setValue('shippingLabelTemplateMedia', baseline?.shippingLabelTemplateMedia?._id || null)
+    if (baseline?.shippingLabelTemplateMedia?._id) {
+      setShippingSelectedMedia([{ _id: baseline.shippingLabelTemplateMedia._id, url: baseline.shippingLabelTemplateMedia.secure_url }])
+    } else {
+      setShippingSelectedMedia([])
+    }
+  }
+
+  const cancelGeneral = () => {
+    if (!baseline) return
+    form.setValue('sendContactCopyToUser', !!baseline?.sendContactCopyToUser)
+  }
+
+  const saveNotifications = async () => {
+    const values = form.getValues()
+    setLoadingNotifications(true)
     try {
-      const emails = (values.contactNotificationEmailsText || '')
-        .split(/[\n,]+/)
-        .map((e) => e.trim())
-        .filter(Boolean)
+      const contactEmails = parseEmails(values.contactNotificationEmailsText)
+      const orderEmails = parseEmails(values.orderNotificationEmailsText)
 
-      const orderEmails = (values.orderNotificationEmailsText || '')
-        .split(/[\n,]+/)
-        .map((e) => e.trim())
-        .filter(Boolean)
+      const invalidContact = contactEmails.filter((e) => !z.string().email().safeParse(e).success)
+      const invalidOrder = orderEmails.filter((e) => !z.string().email().safeParse(e).success)
 
-      const { data: res } = await axios.put('/api/site-config', {
-        contactNotificationEmails: emails,
+      if (invalidContact.length) {
+        form.setError('contactNotificationEmailsText', { message: `Invalid emails: ${invalidContact.join(', ')}` })
+        throw new Error('Please fix invalid contact notification emails.')
+      }
+      if (invalidOrder.length) {
+        form.setError('orderNotificationEmailsText', { message: `Invalid emails: ${invalidOrder.join(', ')}` })
+        throw new Error('Please fix invalid order notification emails.')
+      }
+
+      form.clearErrors(['contactNotificationEmailsText', 'orderNotificationEmailsText'])
+
+      const { data: res } = await axios.put('/api/site-config/notifications', {
+        contactNotificationEmails: contactEmails,
         orderNotificationEmails: orderEmails,
+      })
+
+      if (!res.success) throw new Error(res.message)
+      showToast('success', res.message)
+      await refetch()
+    } catch (error) {
+      const apiMessage = error?.response?.data?.message
+      showToast('error', apiMessage || error.message)
+    } finally {
+      setLoadingNotifications(false)
+    }
+  }
+
+  const saveInvoice = async () => {
+    const values = form.getValues()
+    setLoadingInvoice(true)
+    try {
+      if (values.invoiceTemplateMedia && !/^[a-fA-F0-9]{24}$/.test(String(values.invoiceTemplateMedia))) {
+        form.setError('invoiceTemplateMedia', { message: 'Invalid media id.' })
+        throw new Error('Please re-select invoice logo/template.')
+      }
+      form.clearErrors(['invoiceTemplateMedia'])
+
+      const { data: res } = await axios.put('/api/site-config/invoice', {
         invoiceCompany: {
           name: values.invoiceCompanyName || '',
           email: values.invoiceCompanyEmail || '',
@@ -125,20 +296,89 @@ const SiteConfiguration = () => {
           pincode: values.invoiceCompanyPincode || '',
           country: values.invoiceCompanyCountry || '',
         },
+        invoiceTerms: values.invoiceTerms || '',
+        invoiceFooterNote: values.invoiceFooterNote || '',
         invoiceTemplateMedia: values.invoiceTemplateMedia || null,
+      })
+
+      if (!res.success) throw new Error(res.message)
+      showToast('success', res.message)
+      await refetch()
+    } catch (error) {
+      const apiMessage = error?.response?.data?.message
+      showToast('error', apiMessage || error.message)
+    } finally {
+      setLoadingInvoice(false)
+    }
+  }
+
+  const saveBank = async () => {
+    const values = form.getValues()
+    setLoadingBank(true)
+    try {
+      const { data: res } = await axios.put('/api/site-config/bank', {
+        bankDetails: {
+          accountName: values.bankAccountName || '',
+          accountNumber: values.bankAccountNumber || '',
+          bankName: values.bankBankName || '',
+          ifsc: values.bankIfsc || '',
+          branch: values.bankBranch || '',
+          upiId: values.bankUpiId || '',
+        },
+      })
+
+      if (!res.success) throw new Error(res.message)
+      showToast('success', res.message)
+      await refetch()
+    } catch (error) {
+      const apiMessage = error?.response?.data?.message
+      showToast('error', apiMessage || error.message)
+    } finally {
+      setLoadingBank(false)
+    }
+  }
+
+  const saveShipping = async () => {
+    const values = form.getValues()
+    setLoadingShipping(true)
+    try {
+      if (values.shippingLabelTemplateMedia && !/^[a-fA-F0-9]{24}$/.test(String(values.shippingLabelTemplateMedia))) {
+        form.setError('shippingLabelTemplateMedia', { message: 'Invalid media id.' })
+        throw new Error('Please re-select shipping logo/template.')
+      }
+      form.clearErrors(['shippingLabelTemplateMedia'])
+
+      const { data: res } = await axios.put('/api/site-config/shipping', {
+        shippingLabelTemplateMedia: values.shippingLabelTemplateMedia || null,
+      })
+
+      if (!res.success) throw new Error(res.message)
+      showToast('success', res.message)
+      await refetch()
+    } catch (error) {
+      const apiMessage = error?.response?.data?.message
+      showToast('error', apiMessage || error.message)
+    } finally {
+      setLoadingShipping(false)
+    }
+  }
+
+  const saveGeneral = async () => {
+    const values = form.getValues()
+    setLoadingGeneral(true)
+    try {
+      const { data: res } = await axios.put('/api/site-config/general', {
         sendContactCopyToUser: !!values.sendContactCopyToUser,
       })
 
-      if (!res.success) {
-        throw new Error(res.message)
-      }
-
+      if (!res.success) throw new Error(res.message)
       showToast('success', res.message)
-      refetch()
+      await refetch()
     } catch (error) {
-      showToast('error', error.message)
+      const apiMessage = error?.response?.data?.message
+      showToast('error', apiMessage || error.message)
     } finally {
-      setLoading(false)
+      setLoadingGeneral(false)
     }
   }
 
@@ -151,8 +391,13 @@ const SiteConfiguration = () => {
           <h4 className='text-xl font-semibold'>Site Configuration</h4>
         </CardHeader>
         <CardContent className="pb-5">
+          {configError ? (
+            <div className='mb-4 text-sm text-red-600'>
+              {configError}
+            </div>
+          ) : null}
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-5'>
+            <form onSubmit={(e) => e.preventDefault()} className='space-y-5'>
               <div>
                 <FormField
                   control={form.control}
@@ -172,7 +417,6 @@ const SiteConfiguration = () => {
                   )}
                 />
               </div>
-
               <div>
                 <FormField
                   control={form.control}
@@ -191,6 +435,11 @@ const SiteConfiguration = () => {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              <div className='flex gap-3 flex-wrap'>
+                <ButtonLoading loading={loadingNotifications} type="button" text="Save Notifications" className="cursor-pointer" onClick={saveNotifications} />
+                <ButtonLoading loading={false} type="button" text="Cancel" className="cursor-pointer" onClick={cancelNotifications} />
               </div>
 
               <div className='border-t pt-5'>
@@ -293,11 +542,11 @@ const SiteConfiguration = () => {
                   {invoiceSelectedMedia.length > 0 && (
                     <div className='flex justify-center items-center flex-wrap mb-3 gap-2'>
                       {invoiceSelectedMedia.map(media => (
-                        <div key={media._id} className='h-24 w-24 border'>
+                        <div key={media._id} className='h-20 w-40 border'>
                           {/\.pdf(\?|#|$)/i.test(String(media?.url || '')) ? (
                             <a className='w-full h-full flex items-center justify-center text-sm underline' href={media.url} target='_blank' rel='noreferrer'>PDF</a>
                           ) : (
-                            <Image src={media.url} height={100} width={100} alt='' className='size-full object-cover' />
+                            <Image src={media.url} height={80} width={160} alt='' className='size-full object-contain' />
                           )}
                         </div>
                       ))}
@@ -307,6 +556,145 @@ const SiteConfiguration = () => {
                   <div onClick={() => setInvoiceMediaOpen(true)} className='bg-gray-50 dark:bg-card border w-[240px] mx-auto p-5 cursor-pointer'>
                     <span className='font-semibold'>Select Invoice Logo/Template</span>
                   </div>
+
+                  <div className='mt-4 flex justify-center gap-4 flex-wrap text-sm'>
+                    <a className='underline' href='/api/site-config/invoice-preview' target='_blank' rel='noreferrer'>Invoice Preview (PDF)</a>
+                  </div>
+                </div>
+
+                <div className='mt-4 flex gap-3 flex-wrap'>
+                  <ButtonLoading loading={loadingInvoice} type="button" text="Save Invoice" className="cursor-pointer" onClick={saveInvoice} />
+                  <ButtonLoading loading={false} type="button" text="Cancel" className="cursor-pointer" onClick={cancelInvoice} />
+                </div>
+
+                <div className='mt-6 border-t pt-5'>
+                  <h4 className='text-base font-semibold mb-3'>Bank Details (Payment)</h4>
+                  <div className='grid md:grid-cols-2 grid-cols-1 gap-4'>
+                    <FormField control={form.control} name="bankAccountName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Account Name</FormLabel>
+                        <FormControl><Input placeholder="Account name" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="bankAccountNumber" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Account Number</FormLabel>
+                        <FormControl><Input placeholder="Account number" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="bankBankName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bank Name</FormLabel>
+                        <FormControl><Input placeholder="Bank name" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="bankIfsc" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>IFSC</FormLabel>
+                        <FormControl><Input placeholder="IFSC" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="bankBranch" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Branch</FormLabel>
+                        <FormControl><Input placeholder="Branch" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="bankUpiId" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>UPI ID</FormLabel>
+                        <FormControl><Input placeholder="UPI ID" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                </div>
+
+                <div className='mt-6 border-t pt-5'>
+                  <h4 className='text-base font-semibold mb-3'>Invoice Notes</h4>
+                  <div className='grid md:grid-cols-2 grid-cols-1 gap-4'>
+                    <FormField
+                      control={form.control}
+                      name="invoiceTerms"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Terms</FormLabel>
+                          <FormControl>
+                            <Textarea rows={6} placeholder="Payment terms, return policy, etc." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="invoiceFooterNote"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Footer Note</FormLabel>
+                          <FormControl>
+                            <Textarea rows={6} placeholder="Thank you note / disclaimer" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className='mt-6 border-t pt-5'>
+                  <h4 className='text-base font-semibold mb-3'>Shipping Label Settings</h4>
+
+                  <div className='border border-dashed rounded p-5 text-center'>
+                    <MediaModal
+                      open={shippingMediaOpen}
+                      setOpen={setShippingMediaOpen}
+                      selectedMedia={shippingSelectedMedia}
+                      setSelectedMedia={(m) => {
+                        setShippingSelectedMedia(m)
+                        form.setValue('shippingLabelTemplateMedia', m?.[0]?._id || null)
+                      }}
+                      isMultiple={false}
+                    />
+
+                    {shippingSelectedMedia.length > 0 && (
+                      <div className='flex justify-center items-center flex-wrap mb-3 gap-2'>
+                        {shippingSelectedMedia.map(media => (
+                          <div key={media._id} className='h-20 w-40 border'>
+                            {/\.pdf(\?|#|$)/i.test(String(media?.url || '')) ? (
+                              <a className='w-full h-full flex items-center justify-center text-sm underline' href={media.url} target='_blank' rel='noreferrer'>PDF</a>
+                            ) : (
+                              <Image src={media.url} height={80} width={160} alt='' className='size-full object-contain' />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div onClick={() => setShippingMediaOpen(true)} className='bg-gray-50 dark:bg-card border w-[240px] mx-auto p-5 cursor-pointer'>
+                      <span className='font-semibold'>Select Shipping Logo/Template</span>
+                    </div>
+
+                    <div className='mt-4 flex justify-center gap-4 flex-wrap text-sm'>
+                      <a className='underline' href='/api/site-config/shipping-label-preview' target='_blank' rel='noreferrer'>Shipping Label Preview (PDF)</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div className='mt-4 flex gap-3 flex-wrap'>
+                  <ButtonLoading loading={loadingShipping} type="button" text="Save Shipping" className="cursor-pointer" onClick={saveShipping} />
+                  <ButtonLoading loading={false} type="button" text="Cancel" className="cursor-pointer" onClick={cancelShipping} />
                 </div>
               </div>
 
@@ -326,8 +714,9 @@ const SiteConfiguration = () => {
                 />
               </div>
 
-              <div>
-                <ButtonLoading loading={loading} type="submit" text="Save" className="cursor-pointer" />
+              <div className='flex gap-3 flex-wrap'>
+                <ButtonLoading loading={loadingGeneral} type="button" text="Save General" className="cursor-pointer" onClick={saveGeneral} />
+                <ButtonLoading loading={false} type="button" text="Cancel" className="cursor-pointer" onClick={cancelGeneral} />
               </div>
             </form>
           </Form>

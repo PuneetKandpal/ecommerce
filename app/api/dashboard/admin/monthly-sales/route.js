@@ -3,19 +3,22 @@ import { connectDB } from "@/lib/databaseConnection";
 import { catchError, response } from "@/lib/helperFunction";
 import OrderModel from "@/models/Order.model";
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
     try {
         const auth = await isAuthenticated('admin')
         if (!auth.isAuth) {
             return response(false, 403, 'Unauthorized.')
         }
+
         await connectDB()
 
         const monthlySales = await OrderModel.aggregate([
             {
                 $match: {
                     deletedAt: null,
-                    status: { $in: ['processing', 'shipped', 'delivered'] }
+                    status: { $in: ['pending', 'payment_received', 'packed', 'processing', 'shipped', 'delivered', 'cancelled', 'unverified'] }
                 }
             },
             {
@@ -34,7 +37,7 @@ export async function GET() {
 
         return response(true, 200, 'Data found', monthlySales)
 
-    } catch {
+    } catch (error) {
         return catchError(error)
     }
 }
