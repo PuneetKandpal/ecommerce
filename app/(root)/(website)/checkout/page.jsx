@@ -94,6 +94,8 @@ const Checkout = () => {
 
     const couponForm = useForm({
         resolver: zodResolver(couponFormSchema),
+        mode: 'onTouched',
+        reValidateMode: 'onChange',
         defaultValues: {
             code: "",
             minShoppingAmount: subtotal
@@ -147,6 +149,8 @@ const Checkout = () => {
 
     const orderForm = useForm({
         resolver: zodResolver(orderFormSchema),
+        mode: 'onTouched',
+        reValidateMode: 'onChange',
         defaultValues: {
             name: '',
             email: '',

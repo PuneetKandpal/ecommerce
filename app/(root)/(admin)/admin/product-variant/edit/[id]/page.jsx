@@ -26,6 +26,8 @@ const EditProductVariant = ({ params }) => {
   const { data: getVariant, loading: getVariantLoading } = useFetch(`/api/product-variant/get/${id}`)
 
   const form = useForm({
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
     defaultValues: {
       _id: id,
       product: "",

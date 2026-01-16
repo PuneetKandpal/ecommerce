@@ -58,10 +58,13 @@ const EditProduct = ({ params }) => {
     discountPercentage: true,
     description: true,
     variantConfig: true,
+    media: true,
   })
 
   const form = useForm({
     resolver: zodResolver(formSchema),
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
     defaultValues: {
       _id: id,
       name: "",
@@ -73,6 +76,7 @@ const EditProduct = ({ params }) => {
       discountPercentage: 0,
       description: "",
       variantConfig: { attributes: [] },
+      media: [],
     },
   })
 
@@ -90,6 +94,7 @@ const EditProduct = ({ params }) => {
         discountPercentage: product?.discountPercentage,
         description: product?.description,
         variantConfig: product?.variantConfig || { attributes: [] },
+        media: Array.isArray(product?.media) ? product.media.map((m) => m?._id).filter(Boolean) : [],
       })
 
       if (product.media) {
@@ -106,6 +111,14 @@ const EditProduct = ({ params }) => {
       form.setValue('slug', slugify(name).toLowerCase())
     }
   }, [form.watch('name')])
+
+  useEffect(() => {
+    const ids = Array.isArray(selectedMedia) ? selectedMedia.map((m) => m?._id).filter(Boolean) : []
+    form.setValue('media', ids, { shouldValidate: true, shouldDirty: true })
+    if (ids.length) {
+      form.clearErrors('media')
+    }
+  }, [selectedMedia])
 
   // discount percentage calculation 
   useEffect(() => {
@@ -128,10 +141,13 @@ const EditProduct = ({ params }) => {
     setLoading(true)
     try {
       if (selectedMedia.length <= 0) {
-        return showToast('error', 'Please select media.')
+        form.setError('media', { message: 'Please select media.' })
+        setLoading(false)
+        return
       }
 
       const mediaIds = selectedMedia.map(media => media._id)
+      form.clearErrors('media')
       values.media = mediaIds
 
       const { data: response } = await axios.put('/api/product/update', values)
@@ -303,6 +319,18 @@ const EditProduct = ({ params }) => {
               </div>
 
               <div className='md:col-span-2 border border-dashed rounded p-5 text-center'>
+                <FormField
+                  control={form.control}
+                  name="media"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <input type="hidden" value={(field.value || []).join(',')} readOnly />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <MediaModal
                   open={open}
                   setOpen={setOpen}

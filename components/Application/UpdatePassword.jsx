@@ -37,6 +37,8 @@ const UpdatePassword = ({ email }) => {
 
     const form = useForm({
         resolver: zodResolver(formSchema),
+        mode: 'onTouched',
+        reValidateMode: 'onChange',
         defaultValues: {
             email: email,
             password: "",

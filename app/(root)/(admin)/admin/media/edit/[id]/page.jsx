@@ -43,6 +43,8 @@ const EditMedia = ({ params }) => {
 
     const form = useForm({
         resolver: zodResolver(formSchema),
+        mode: 'onTouched',
+        reValidateMode: 'onChange',
         defaultValues: {
             _id: "",
             alt: "",

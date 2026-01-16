@@ -29,6 +29,8 @@ const AddProduct = () => {
   }, [getProduct])
 
   const form = useForm({
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
     defaultValues: {
       product: "",
       name: "",

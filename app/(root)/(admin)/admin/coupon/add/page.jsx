@@ -37,6 +37,8 @@ const AddCoupon = () => {
 
   const form = useForm({
     resolver: zodResolver(formSchema),
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
     defaultValues: {
       code: "",
       discountPercentage: "",

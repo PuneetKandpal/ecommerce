@@ -21,6 +21,14 @@ const DynamicVariantForm = ({ form, onSubmit, loading, productOption, selectedPr
         }
     }, [initialMedia])
 
+    useEffect(() => {
+        const ids = Array.isArray(selectedMedia) ? selectedMedia.map((m) => m?._id).filter(Boolean) : []
+        form.setValue('media', ids, { shouldValidate: true, shouldDirty: true })
+        if (ids.length) {
+            form.clearErrors('media')
+        }
+    }, [selectedMedia])
+
     // Fetch product config when product is selected
     useEffect(() => {
         if (selectedProductId) {
@@ -57,7 +65,7 @@ const DynamicVariantForm = ({ form, onSubmit, loading, productOption, selectedPr
 
     const handleSubmit = async (values) => {
         if (selectedMedia.length <= 0) {
-            showToast('error', 'Please select media.')
+            form.setError('media', { message: 'Please select media.' })
             return
         }
 
@@ -68,7 +76,7 @@ const DynamicVariantForm = ({ form, onSubmit, loading, productOption, selectedPr
                 const isRequired = attr?.required !== false
                 const value = values[`attr_${attr.key}`]
                 if (isRequired && (value === undefined || value === null || String(value).trim() === '')) {
-                    throw new Error(`${attr.label} is required`)
+                    form.setError(`attr_${attr.key}`, { message: `${attr.label} is required` })
                 }
                 if (value !== undefined && value !== null && String(value).trim() !== '') {
                     attributes[attr.key] = value
@@ -76,7 +84,12 @@ const DynamicVariantForm = ({ form, onSubmit, loading, productOption, selectedPr
             })
         }
 
+        if (Object.keys(form.formState.errors || {}).length) {
+            return
+        }
+
         const mediaIds = selectedMedia.map(media => media._id)
+        form.clearErrors('media')
         const payload = {
             _id: values._id,
             product: values.product,
@@ -299,6 +312,18 @@ const DynamicVariantForm = ({ form, onSubmit, loading, productOption, selectedPr
 
                 {/* Media Selection */}
                 <div className='mt-5 border border-dashed rounded p-5 text-center'>
+                    <FormField
+                        control={form.control}
+                        name="media"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormControl>
+                                    <input type="hidden" value={(field.value || []).join(',')} readOnly />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                     <MediaModal
                         open={open}
                         setOpen={setOpen}

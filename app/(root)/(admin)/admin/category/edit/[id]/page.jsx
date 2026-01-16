@@ -42,6 +42,8 @@ const EditCategory = ({ params }) => {
 
     const form = useForm({
         resolver: zodResolver(formSchema),
+        mode: 'onTouched',
+        reValidateMode: 'onChange',
         defaultValues: {
             _id: id,
             name: "",
@@ -77,10 +79,26 @@ const EditCategory = ({ params }) => {
         }
     }, [form.watch('name')])
 
+    useEffect(() => {
+        const id = selectedMedia?.[0]?._id || null
+        form.setValue('image', id, { shouldValidate: true, shouldDirty: true })
+        if (id) {
+            form.clearErrors('image')
+        }
+    }, [selectedMedia])
+
+
     const onSubmit = async (values) => {
         setLoading(true)
         try {
-            values.image = selectedMedia[0]?._id || null
+            if (!selectedMedia?.[0]?._id) {
+                form.setError('image', { message: 'Please select an image.' })
+                setLoading(false)
+                return
+            }
+
+            values.image = selectedMedia[0]._id
+            form.clearErrors('image')
             const { data: response } = await axios.put('/api/category/update', values)
             if (!response.success) {
                 throw new Error(response.message)
@@ -139,6 +157,18 @@ const EditCategory = ({ params }) => {
                             </div>
 
                             <div className='md:col-span-2 border border-dashed rounded p-5 text-center'>
+                                <FormField
+                                    control={form.control}
+                                    name="image"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <input type="hidden" value={field.value || ''} readOnly />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                                 <MediaModal
                                     open={open}
                                     setOpen={setOpen}
