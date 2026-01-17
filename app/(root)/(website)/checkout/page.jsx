@@ -75,17 +75,17 @@ const Checkout = () => {
     useEffect(() => {
         const cartProducts = cart.products
 
-        const subTotalAmount = cartProducts.reduce((sum, product) => sum + (product.sellingPrice * product.qty), 0)
-
+        const subTotalAmount = cartProducts.reduce((sum, product) => sum + (product.mrp * product.qty), 0)
         const discount = cartProducts.reduce((sum, product) => sum + ((product.mrp - product.sellingPrice) * product.qty), 0)
+        const payableBeforeCoupon = subTotalAmount - discount
 
         setSubTotal(subTotalAmount)
         setDiscount(discount)
-        setTotalAmount(subTotalAmount)
+        setTotalAmount(payableBeforeCoupon - (couponDiscountAmount || 0))
 
-        couponForm.setValue('minShoppingAmount', subTotalAmount)
+        couponForm.setValue('minShoppingAmount', payableBeforeCoupon)
 
-    }, [cart])
+    }, [cart, couponDiscountAmount])
 
     const couponFormSchema = zSchema.pick({
         code: true,
@@ -111,9 +111,12 @@ const Checkout = () => {
             }
 
             const discountPercentage = response.data.discountPercentage
-            // get coupon discount amount 
-            setCouponDiscountAmount((subtotal * discountPercentage) / 100)
-            setTotalAmount(subtotal - ((subtotal * discountPercentage) / 100))
+
+            const payableBeforeCoupon = subtotal - discount
+            const couponAmount = (payableBeforeCoupon * discountPercentage) / 100
+
+            setCouponDiscountAmount(couponAmount)
+            setTotalAmount(payableBeforeCoupon - couponAmount)
             showToast('success', response.message)
             setCouponCode(couponForm.getValues('code'))
             setIsCouponApplied(true)
@@ -130,7 +133,7 @@ const Checkout = () => {
         setIsCouponApplied(false)
         setCouponCode('')
         setCouponDiscountAmount(0)
-        setTotalAmount(subtotal)
+        setTotalAmount(subtotal - discount)
     }
 
     const orderFormSchema = zSchema.pick({
@@ -288,10 +291,10 @@ const Checkout = () => {
                                                 <FormItem>
                                                     <FormControl>
                                                         <Input
+                                                            type="tel"
                                                             placeholder="Phone*"
                                                             inputMode="numeric"
                                                             maxLength={10}
-                                                            pattern="\\d{10}"
                                                             {...field}
                                                         />
                                                     </FormControl>
@@ -361,7 +364,6 @@ const Checkout = () => {
                                                             placeholder="Pincode*"
                                                             inputMode="numeric"
                                                             maxLength={6}
-                                                            pattern="\\d{6}"
                                                             {...field}
                                                         />
                                                     </FormControl>
