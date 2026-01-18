@@ -4,11 +4,13 @@ import { keepPreviousData, useInfiniteQuery, useQueryClient } from '@tanstack/re
 import axios from 'axios'
 import Image from 'next/image'
 import React, { useState } from 'react'
+
 import loading from '@/public/assets/images/loading.svg'
 import ModalMediaBlock from './ModalMediaBlock'
 import { showToast } from '@/lib/showToast'
 import ButtonLoading from '../ButtonLoading'
 import UploadMedia from './UploadMedia'
+
 const MediaModal = ({ open, setOpen, selectedMedia, setSelectedMedia, isMultiple }) => {
 
     const [previouslySelected, setPreviouslySelected] = useState([])
@@ -29,7 +31,6 @@ const MediaModal = ({ open, setOpen, selectedMedia, setSelectedMedia, isMultiple
             return lastPage.hasMore ? nextPage : undefined
         }
     })
-
 
     const handleClear = () => {
         setSelectedMedia([])

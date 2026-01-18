@@ -32,14 +32,14 @@ const BrandsMarquee = ({ companies = [] }) => {
           const tile = (
             <div className='brands-marquee-item shrink-0'>
               <div
-                className='group reactive-card relative flex h-44 w-72 items-center justify-center overflow-hidden rounded-[32px] border border-white/20 bg-white/70 text-white shadow-[0_15px_45px_rgba(15,23,42,0.15)] backdrop-blur-3xl transition-transform duration-300'
+                className='group reactive-card relative h-48 w-[360px] overflow-hidden rounded-[32px] border border-white/20 bg-white/70 text-white shadow-[0_15px_45px_rgba(15,23,42,0.15)] backdrop-blur-3xl transition-transform duration-300'
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
               >
                 <img
                   src={company.logo?.secure_url || company.logo?.url || company.logo}
                   alt={company.name || 'Brand logo'}
-                  className='h-full w-full object-contain transition-all duration-300 ease-out group-hover:scale-105'
+                  className='absolute inset-0 h-full w-full object-cover transition-all duration-300 ease-out group-hover:scale-105'
                 />
 
                 <div className='pointer-events-none absolute inset-0 bg-linear-to-b from-slate-900/0 via-slate-900/20 to-slate-900/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100' />

@@ -2,7 +2,6 @@
 import BreadCrumb from '@/components/Application/Admin/BreadCrumb'
 import MediaModal from '@/components/Application/Admin/MediaModal'
 import ButtonLoading from '@/components/Application/ButtonLoading'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Form } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -37,6 +36,22 @@ const breadcrumbData = [
   { href: ADMIN_PAGE_CONFIG_HOME, label: 'Page Config' },
   { href: ADMIN_PAGE_CONFIG_HOME, label: 'Home' },
 ]
+
+const MIN_BRAND_LOGO_WIDTH = 600
+const MIN_BRAND_LOGO_RATIO = 1.4
+
+const getImageDimensions = (url) =>
+  new Promise((resolve, reject) => {
+    if (typeof window === 'undefined' || !url) {
+      resolve({ width: MIN_BRAND_LOGO_WIDTH, height: MIN_BRAND_LOGO_WIDTH / MIN_BRAND_LOGO_RATIO })
+      return
+    }
+
+    const img = new window.Image()
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
+    img.onerror = () => reject(new Error('Unable to load image for validation.'))
+    img.src = url
+  })
 
 const SortableImageItem = ({ image, index, onRemove }) => {
   const {
@@ -203,21 +218,20 @@ const HomePageConfig = () => {
     <div>
       <BreadCrumb breadcrumbData={breadcrumbData} />
 
-      <Card className='py-0 rounded shadow-sm'>
-        <CardHeader className='pt-3 px-3 border-b [.border-b]:pb-2'>
-          <h4 className='text-xl font-semibold'>Home Page Settings</h4>
-        </CardHeader>
-        <CardContent className='pb-5'>
+      <div className='mt-4'>
+        <div className='mb-6'>
+          <h4 className='text-2xl font-semibold'>Home Page Settings</h4>
           {homeConfigError ? (
-            <div className='mb-4 text-sm text-red-600'>
+            <div className='mt-2 text-sm text-red-600'>
               {homeConfigError}
             </div>
           ) : null}
+        </div>
 
-          <Form {...form}>
-            <form onSubmit={(e) => e.preventDefault()} className='space-y-5'>
-              <div className='space-y-4'>
-                <div>
+        <Form {...form}>
+          <form onSubmit={(e) => e.preventDefault()} className='space-y-5'>
+            <div className='space-y-4'>
+                <div className='rounded-xl border border-gray-200 bg-white p-5 shadow-sm'>
                   <h5 className='font-medium mb-2'>Slider Images (Carousel)</h5>
                   <p className='text-sm text-gray-600 mb-3'>
                     {form.watch('sliderImages')?.length || 0} of 4 images added
@@ -281,7 +295,7 @@ const HomePageConfig = () => {
                   </div>
                 </div>
 
-                <div>
+                <div className='rounded-xl border border-gray-200 bg-white p-5 shadow-sm'>
                   <h5 className='font-medium mb-2'>Banner Section (2 Images)</h5>
                   <p className='text-sm text-gray-600 mb-3'>
                     {(form.watch('bannerSectionImages')?.length || 0)} of 2 images added
@@ -344,7 +358,7 @@ const HomePageConfig = () => {
                   </div>
                 </div>
 
-                <div>
+                <div className='rounded-xl border border-gray-200 bg-white p-5 shadow-sm'>
                   <h5 className='font-medium mb-2'>Homepage Testimonials</h5>
                   <p className='text-sm text-gray-600 mb-3'>
                     Add customer testimonials that appear on the homepage
@@ -432,10 +446,13 @@ const HomePageConfig = () => {
                   </div>
                 </div>
 
-                <div>
+                <div className='rounded-xl border border-gray-200 bg-white p-5 shadow-sm'>
                   <h5 className='font-medium mb-2'>Brands Marquee</h5>
                   <p className='text-sm text-gray-600 mb-3'>
                     Add companies to show in a continuous scrolling row (logo + name). Hover pauses on the website.
+                  </p>
+                  <p className='text-xs font-medium text-blue-600 mb-4'>
+                    Use landscape logos at least {MIN_BRAND_LOGO_WIDTH}px wide (≈{MIN_BRAND_LOGO_RATIO}:1 ratio) so they cover the marquee tiles without gaps.
                   </p>
 
                   <div className='border rounded-lg p-4'>
@@ -589,11 +606,10 @@ const HomePageConfig = () => {
                 <div className='flex gap-3 flex-wrap mt-4'>
                   <ButtonLoading loading={loadingHome} type='button' text='Save Home Settings' className='cursor-pointer' onClick={saveHome} />
                 </div>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+            </div>
+          </form>
+        </Form>
+      </div>
 
       <MediaModal
         open={sliderMediaOpen}
@@ -628,11 +644,28 @@ const HomePageConfig = () => {
         open={brandLogoPickerOpen}
         setOpen={setBrandLogoPickerOpen}
         selectedMedia={brandLogoPickerSelectedMedia}
-        setSelectedMedia={(m) => {
+        setSelectedMedia={async (m) => {
           setBrandLogoPickerSelectedMedia(m)
 
           if (brandLogoPickerIndex !== null && m && m.length > 0) {
             const selected = m[0]
+
+            try {
+              const dimensions = await getImageDimensions(selected.secure_url || selected.url)
+              const ratio = dimensions.width / dimensions.height
+
+              if (dimensions.width < MIN_BRAND_LOGO_WIDTH || ratio < MIN_BRAND_LOGO_RATIO) {
+                showToast(
+                  'warning',
+                  `Logo must be at least ${MIN_BRAND_LOGO_WIDTH}px wide with ~${MIN_BRAND_LOGO_RATIO}:1 landscape ratio.`
+                )
+                return
+              }
+            } catch (error) {
+              showToast('error', error.message || 'Unable to validate image dimensions.')
+              return
+            }
+
             const current = form.getValues('brandsMarqueeCompanies') || []
             if (current[brandLogoPickerIndex]) {
               current[brandLogoPickerIndex] = {
