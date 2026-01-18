@@ -1,9 +1,9 @@
-import MainSlider from '@/components/Application/Website/MainSlider'
+import HomeHero from '@/components/Application/Website/HomeHero'
+
 import Image from 'next/image'
 import Link from 'next/link'
+
 import React from 'react'
-import banner1 from '@/public/assets/images/banner1.png'
-import banner2 from '@/public/assets/images/banner2.png'
 import FeaturedProduct from '@/components/Application/Website/FeaturedProduct'
 import advertisingBanner from '@/public/assets/images/advertising-banner.png'
 import Testimonial from '@/components/Application/Website/Testimonial'
@@ -19,63 +19,55 @@ export const dynamic = 'force-dynamic'
 
 const Home = async () => {
     let categoryData = null
-    try {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-        const apiUrl = `${baseUrl}/api/category/get-category`
+    let homeConfig = null
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
 
-        const res = await fetch(apiUrl, { 
+    try {
+        const apiUrl = `${baseUrl}/api/category/get-category`
+        const res = await fetch(apiUrl, {
             cache: 'no-store',
             headers: {
                 'Content-Type': 'application/json',
             }
         })
-        
+
         if (!res.ok) {
             console.error('Category fetch failed:', res.status, res.statusText)
             categoryData = null
         } else {
             categoryData = await res.json()
-            console.log('Category data fetched:', categoryData?.data?.length || 0, 'categories')
         }
     } catch (error) {
         console.error('Category fetch error:', error.message)
         categoryData = null
     }
 
+    try {
+        const homeConfigUrl = `${baseUrl}/api/site-config/home`
+        const res = await fetch(homeConfigUrl, {
+            cache: 'no-store',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+
+        if (!res.ok) {
+            console.error('Home config fetch failed:', res.status, res.statusText)
+            homeConfig = null
+        } else {
+            homeConfig = await res.json()
+        }
+    } catch (error) {
+        console.error('Home config fetch error:', error.message)
+        homeConfig = null
+    }
+
+    const sliderImages = homeConfig?.data?.sliderImages || []
+    const bannerImages = homeConfig?.data?.bannerImages || []
+
     return (
         <>
-            <section>
-                <MainSlider />
-            </section>
-
-            <section className='lg:px-32 px-4 sm:pt-20 pt-5 pb-10'>
-                <div className='grid grid-cols-2 sm:gap-10 gap-2'>
-
-                    <div className='border rounded-lg overflow-hidden'>
-                        <Link href="" >
-                            <Image
-                                src={banner1.src}
-                                width={banner1.width}
-                                height={banner1.height}
-                                alt='banner 1'
-                                className='transition-all hover:scale-110'
-                            />
-                        </Link>
-                    </div>
-                    <div className='border rounded-lg overflow-hidden'>
-                        <Link href="" >
-                            <Image
-                                src={banner2.src}
-                                width={banner2.width}
-                                height={banner2.height}
-                                alt='banner 2'
-                                className='transition-all hover:scale-110'
-                            />
-                        </Link>
-                    </div>
-
-                </div>
-            </section>
+            <HomeHero sliderImages={sliderImages} bannerImages={bannerImages} />
 
             {categoryData?.success && categoryData?.data?.length > 0
                 &&

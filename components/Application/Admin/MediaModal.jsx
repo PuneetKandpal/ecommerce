@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import Image from 'next/image'
 import React, { useState } from 'react'
@@ -8,9 +8,11 @@ import loading from '@/public/assets/images/loading.svg'
 import ModalMediaBlock from './ModalMediaBlock'
 import { showToast } from '@/lib/showToast'
 import ButtonLoading from '../ButtonLoading'
+import UploadMedia from './UploadMedia'
 const MediaModal = ({ open, setOpen, selectedMedia, setSelectedMedia, isMultiple }) => {
 
     const [previouslySelected, setPreviouslySelected] = useState([])
+    const queryClient = useQueryClient()
 
     const fetchMedia = async (page) => {
         const { data: response } = await axios.get(`/api/media?page=${page}&&limit=18&&deleteType=SD`)
@@ -18,7 +20,7 @@ const MediaModal = ({ open, setOpen, selectedMedia, setSelectedMedia, isMultiple
     }
 
     const { isPending, isError, error, data, isFetching, fetchNextPage, hasNextPage } = useInfiniteQuery({
-        queryKey: ['MediaModal'],
+        queryKey: ['media-data'],
         queryFn: async ({ pageParam }) => await fetchMedia(pageParam),
         placeholderData: keepPreviousData,
         initialPageParam: 0,
@@ -62,7 +64,11 @@ const MediaModal = ({ open, setOpen, selectedMedia, setSelectedMedia, isMultiple
                         <DialogTitle>Media Selection</DialogTitle>
                     </DialogHeader>
 
-                    <div className='h-[calc(100%-80px)] overflow-auto py-2'>
+                    <div className='mb-3'>
+                        <UploadMedia isMultiple={true} queryClient={queryClient} />
+                    </div>
+
+                    <div className='h-[calc(100%-140px)] overflow-auto py-2'>
                         {isPending ?
                             (<div className='size-full flex justify-center items-center'>
                                 <Image src={loading} alt='loading' height={80} width={80} />

@@ -28,10 +28,15 @@ const SiteConfiguration = () => {
   const [loadingBank, setLoadingBank] = useState(false)
   const [loadingShipping, setLoadingShipping] = useState(false)
   const [loadingGeneral, setLoadingGeneral] = useState(false)
+  const [loadingHome, setLoadingHome] = useState(false)
   const [invoiceMediaOpen, setInvoiceMediaOpen] = useState(false)
   const [invoiceSelectedMedia, setInvoiceSelectedMedia] = useState([])
   const [shippingMediaOpen, setShippingMediaOpen] = useState(false)
   const [shippingSelectedMedia, setShippingSelectedMedia] = useState([])
+  const [sliderMediaOpen, setSliderMediaOpen] = useState(false)
+  const [sliderSelectedMedia, setSliderSelectedMedia] = useState([])
+  const [bannerMediaOpen, setBannerMediaOpen] = useState(false)
+  const [bannerSelectedMedia, setBannerSelectedMedia] = useState([])
 
   const [baseline, setBaseline] = useState(null)
 
@@ -89,6 +94,22 @@ const SiteConfiguration = () => {
     invoiceFooterNote: z.string().optional(),
     invoiceTemplateMedia: objectIdOrNull.optional(),
     shippingLabelTemplateMedia: objectIdOrNull.optional(),
+    sliderImages: z.array(z.object({
+      id: z.string().optional(),
+      url: z.string().url().optional(),
+      secure_url: z.string().url().optional(),
+      public_id: z.string().optional(),
+      alt: z.string().optional(),
+      link: z.string().url().optional(),
+    })).optional(),
+    bannerImages: z.array(z.object({
+      id: z.string().optional(),
+      url: z.string().url().optional(),
+      secure_url: z.string().url().optional(),
+      public_id: z.string().optional(),
+      alt: z.string().optional(),
+      link: z.string().url().optional(),
+    })).optional(),
   })
 
   const form = useForm({
@@ -119,6 +140,8 @@ const SiteConfiguration = () => {
       invoiceFooterNote: '',
       invoiceTemplateMedia: null,
       shippingLabelTemplateMedia: null,
+      sliderImages: [],
+      bannerImages: [],
     },
   })
 
@@ -207,6 +230,8 @@ const SiteConfiguration = () => {
       invoiceFooterNote: config?.invoiceFooterNote || '',
       invoiceTemplateMedia: config?.invoiceTemplateMedia?._id || null,
       shippingLabelTemplateMedia: config?.shippingLabelTemplateMedia?._id || null,
+      sliderImages: config?.sliderImages || [],
+      bannerImages: config?.bannerImages || [],
     })
 
     if (config?.invoiceTemplateMedia?._id) {
@@ -426,6 +451,26 @@ const SiteConfiguration = () => {
     }
   }
 
+  const saveHome = async () => {
+    const values = form.getValues()
+    setLoadingHome(true)
+    try {
+      const { data: res } = await axios.put('/api/site-config/home', {
+        sliderImages: values.sliderImages || [],
+        bannerImages: values.bannerImages || [],
+      })
+
+      if (!res.success) throw new Error(res.message)
+      showToast('success', res.message)
+      await refetch()
+    } catch (error) {
+      const apiMessage = error?.response?.data?.message
+      showToast('error', apiMessage || error.message)
+    } finally {
+      setLoadingHome(false)
+    }
+  }
+
   return (
     <div>
       <BreadCrumb breadcrumbData={breadcrumbData} />
@@ -484,6 +529,84 @@ const SiteConfiguration = () => {
               <div className='flex gap-3 flex-wrap'>
                 <ButtonLoading loading={loadingNotifications} type="button" text="Save Notifications" className="cursor-pointer" onClick={saveNotifications} />
                 <ButtonLoading loading={false} type="button" text="Cancel" className="cursor-pointer" onClick={cancelNotifications} />
+              </div>
+
+              <div className='border-t pt-5'>
+                <h4 className='text-lg font-semibold mb-3'>Home Page Settings</h4>
+                
+                <div className='space-y-4'>
+                  <div>
+                    <h5 className='font-medium mb-2'>Slider Images (Carousel)</h5>
+                    <div className='border rounded-lg p-4'>
+                      <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mb-4'>
+                        {form.watch('sliderImages')?.map((image, index) => (
+                          <div key={index} className='relative group'>
+                            <img 
+                              src={image.secure_url || image.url} 
+                              alt={image.alt || `Slider ${index + 1}`}
+                              className='w-full h-32 object-cover rounded border'
+                            />
+                            <button
+                              type='button'
+                              onClick={() => {
+                                const currentImages = form.getValues('sliderImages') || []
+                                const newImages = currentImages.filter((_, i) => i !== index)
+                                form.setValue('sliderImages', newImages)
+                              }}
+                              className='absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity'
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div onClick={() => {
+                        setSliderMediaOpen(true)
+                        setSliderSelectedMedia([])
+                      }} className='bg-gray-50 dark:bg-card border w-full mx-auto p-5 cursor-pointer text-center'>
+                        <span className='font-semibold'>+ Add Slider Images</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h5 className='font-medium mb-2'>Banner Images</h5>
+                    <div className='border rounded-lg p-4'>
+                      <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mb-4'>
+                        {form.watch('bannerImages')?.map((image, index) => (
+                          <div key={index} className='relative group'>
+                            <img 
+                              src={image.secure_url || image.url} 
+                              alt={image.alt || `Banner ${index + 1}`}
+                              className='w-full h-32 object-cover rounded border'
+                            />
+                            <button
+                              type='button'
+                              onClick={() => {
+                                const currentImages = form.getValues('bannerImages') || []
+                                const newImages = currentImages.filter((_, i) => i !== index)
+                                form.setValue('bannerImages', newImages)
+                              }}
+                              className='absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity'
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div onClick={() => {
+                        setBannerMediaOpen(true)
+                        setBannerSelectedMedia([])
+                      }} className='bg-gray-50 dark:bg-card border w-full mx-auto p-5 cursor-pointer text-center'>
+                        <span className='font-semibold'>+ Add Banner Images</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className='flex gap-3 flex-wrap mt-4'>
+                  <ButtonLoading loading={loadingHome} type="button" text="Save Home Settings" className="cursor-pointer" onClick={saveHome} />
+                </div>
               </div>
 
               <div className='border-t pt-5'>
@@ -771,6 +894,54 @@ const SiteConfiguration = () => {
           </Form>
         </CardContent>
       </Card>
+
+      <MediaModal
+        open={sliderMediaOpen}
+        setOpen={setSliderMediaOpen}
+        selectedMedia={sliderSelectedMedia}
+        setSelectedMedia={(m) => {
+          setSliderSelectedMedia(m)
+          if (m && m.length > 0) {
+            const currentImages = form.getValues('sliderImages') || []
+            const newImages = [...currentImages, ...m.map(media => ({
+              id: media._id,
+              url: media.url,
+              secure_url: media.secure_url,
+              public_id: media.public_id,
+              alt: media.alt || '',
+              link: ''
+            }))]
+            form.setValue('sliderImages', newImages)
+          }
+          setSliderMediaOpen(false)
+          setSliderSelectedMedia([])
+        }}
+        isMultiple={true}
+      />
+
+      <MediaModal
+        open={bannerMediaOpen}
+        setOpen={setBannerMediaOpen}
+        selectedMedia={bannerSelectedMedia}
+        setSelectedMedia={(m) => {
+          setBannerSelectedMedia(m)
+          if (m && m.length > 0) {
+            const currentImages = form.getValues('bannerImages') || []
+            const newImages = [...currentImages, ...m.map(media => ({
+              id: media._id,
+              url: media.url,
+              secure_url: media.secure_url,
+              public_id: media.public_id,
+              alt: media.alt || '',
+              link: ''
+            }))]
+            form.setValue('bannerImages', newImages)
+          }
+          setBannerMediaOpen(false)
+          setBannerSelectedMedia([])
+        }}
+        isMultiple={true}
+      />
     </div>
   )
 }

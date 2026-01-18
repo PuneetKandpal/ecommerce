@@ -12,7 +12,6 @@ import Image from 'next/image';
 import { LuChevronRight } from "react-icons/lu";
 import { LuChevronLeft } from "react-icons/lu";
 
-
 const ArrowNext = (props) => {
     const { onClick } = props
     return (
@@ -21,6 +20,7 @@ const ArrowNext = (props) => {
         </button>
     )
 }
+
 const ArrowPrev = (props) => {
     const { onClick } = props
     return (
@@ -30,7 +30,8 @@ const ArrowPrev = (props) => {
     )
 }
 
-const MainSlider = () => {
+const MainSlider = ({ images = [] }) => {
+
     const settings = {
         dots: true,
         infinite: true,
@@ -51,21 +52,35 @@ const MainSlider = () => {
             }
         ]
     }
+
+    const imagesToShow = images.length > 0 ? images : [
+        { src: slider1.src, width: slider1.width, height: slider1.height, alt: 'slider 1' },
+        { src: slider2.src, width: slider2.width, height: slider2.height, alt: 'slider 2' },
+        { src: slider3.src, width: slider3.width, height: slider3.height, alt: 'slider 3' },
+        { src: slider4.src, width: slider4.width, height: slider4.height, alt: 'slider 4' }
+    ]
+
     return (
         <div>
             <Slider {...settings}>
-                <div>
-                    <Image src={slider1.src} width={slider1.width} height={slider1.height} alt='slider 1' />
-                </div>
-                <div>
-                    <Image src={slider2.src} width={slider2.width} height={slider2.height} alt='slider 2' />
-                </div>
-                <div>
-                    <Image src={slider3.src} width={slider3.width} height={slider3.height} alt='slider 3' />
-                </div>
-                <div>
-                    <Image src={slider4.src} width={slider4.width} height={slider4.height} alt='slider 4' />
-                </div>
+                {imagesToShow.map((image, index) => (
+                    <div key={index}>
+                        {image.secure_url ? (
+                            <img 
+                                src={image.secure_url} 
+                                alt={image.alt || `Slider ${index + 1}`} 
+                                className="w-full h-auto"
+                            />
+                        ) : (
+                            <Image 
+                                src={image.src} 
+                                width={image.width} 
+                                height={image.height} 
+                                alt={image.alt} 
+                            />
+                        )}
+                    </div>
+                ))}
             </Slider>
         </div>
     )
