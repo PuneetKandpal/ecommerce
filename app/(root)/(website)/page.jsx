@@ -63,11 +63,10 @@ const Home = async () => {
     }
 
     const sliderImages = homeConfig?.data?.sliderImages || []
-    const bannerImages = homeConfig?.data?.bannerImages || []
 
     return (
         <>
-            <HomeHero sliderImages={sliderImages} bannerImages={bannerImages} />
+            <HomeHero sliderImages={sliderImages} />
 
             {categoryData?.success && categoryData?.data?.length > 0
                 &&

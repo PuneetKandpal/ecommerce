@@ -2,23 +2,28 @@ import { response } from '@/lib/helperFunction'
 import { setSiteConfigGroup, getSiteConfigGroup } from '@/lib/getSiteConfig'
 import { z } from 'zod'
 
+const sliderImageObject = z.object({
+  id: z.string().optional(),
+  url: z.string().optional(),
+  secure_url: z.string().optional(),
+  public_id: z.string().optional(),
+  asset_id: z.string().optional(),
+  signature: z.string().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  format: z.string().optional(),
+  resource_type: z.string().optional(),
+  created_at: z.string().optional(),
+  bytes: z.number().optional(),
+  type: z.string().optional(),
+  etag: z.string().optional(),
+  placeholder: z.boolean().optional(),
+  alt: z.string().optional(),
+  link: z.string().optional(),
+})
+
 const schema = z.object({
-    bannerImages: z.array(z.object({
-        id: z.string().optional(),
-        url: z.string().url().optional(),
-        secure_url: z.string().url().optional(),
-        public_id: z.string().optional(),
-        alt: z.string().optional(),
-        link: z.string().url().optional(),
-    })).optional(),
-    sliderImages: z.array(z.object({
-        id: z.string().optional(),
-        url: z.string().url().optional(),
-        secure_url: z.string().url().optional(),
-        public_id: z.string().optional(),
-        alt: z.string().optional(),
-        link: z.string().url().optional(),
-    })).optional(),
+  sliderImages: z.array(sliderImageObject).optional(),
 })
 
 export async function GET() {

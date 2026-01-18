@@ -1,10 +1,12 @@
-import { response } from '@/lib/response'
+import { response } from '@/lib/helperFunction'
 import TestimonialModel from '@/models/Testimonial.model'
-import { isAdmin } from '@/lib/auth'
+import { isAuthenticated } from '@/lib/authentication'
+import { connectDB } from '@/lib/databaseConnection'
 import mongoose from 'mongoose'
 
 export async function GET() {
     try {
+        await connectDB()
         const testimonials = await TestimonialModel.find({ isActive: true })
             .sort({ order: 1, createdAt: -1 })
             .lean()
@@ -18,11 +20,12 @@ export async function GET() {
 
 export async function POST(request) {
     try {
-        const isAdminUser = await isAdmin(request)
-        if (!isAdminUser) {
-            return response(false, 401, 'Unauthorized.')
+        const auth = await isAuthenticated('admin')
+        if (!auth.isAuth) {
+            return response(false, 403, 'Unauthorized.')
         }
 
+        await connectDB()
         const body = await request.json()
         const testimonial = new TestimonialModel(body)
         await testimonial.save()
@@ -36,11 +39,12 @@ export async function POST(request) {
 
 export async function PUT(request) {
     try {
-        const isAdminUser = await isAdmin(request)
-        if (!isAdminUser) {
-            return response(false, 401, 'Unauthorized.')
+        const auth = await isAuthenticated('admin')
+        if (!auth.isAuth) {
+            return response(false, 403, 'Unauthorized.')
         }
 
+        await connectDB()
         const body = await request.json()
         const { _id, ...updateData } = body
 
@@ -67,11 +71,12 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
     try {
-        const isAdminUser = await isAdmin(request)
-        if (!isAdminUser) {
-            return response(false, 401, 'Unauthorized.')
+        const auth = await isAuthenticated('admin')
+        if (!auth.isAuth) {
+            return response(false, 403, 'Unauthorized.')
         }
 
+        await connectDB()
         const { searchParams } = new URL(request.url)
         const id = searchParams.get('id')
 

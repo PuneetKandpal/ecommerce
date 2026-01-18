@@ -16,11 +16,77 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import Image from 'next/image'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import {
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { GripVertical } from 'lucide-react'
 
 const breadcrumbData = [
   { href: ADMIN_DASHBOARD, label: 'Home' },
   { href: ADMIN_SITE_CONFIGURATION, label: 'Site Configuration' },
 ]
+
+// Sortable Image Item Component
+const SortableImageItem = ({ image, index, onRemove }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: image.id || index })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative group"
+    >
+      <div
+        className="absolute top-1 left-1 z-10 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded cursor-move flex items-center gap-1"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical size={12} />
+        {index + 1}
+      </div>
+      <img
+        src={image.secure_url || image.url}
+        alt={image.alt || `Slider ${index + 1}`}
+        className="w-full h-32 object-cover rounded border"
+      />
+      <button
+        type='button'
+        onClick={() => onRemove(index)}
+        className='absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10'
+      >
+        ×
+      </button>
+    </div>
+  )
+}
 
 const SiteConfiguration = () => {
   const [loadingNotifications, setLoadingNotifications] = useState(false)
@@ -35,10 +101,32 @@ const SiteConfiguration = () => {
   const [shippingSelectedMedia, setShippingSelectedMedia] = useState([])
   const [sliderMediaOpen, setSliderMediaOpen] = useState(false)
   const [sliderSelectedMedia, setSliderSelectedMedia] = useState([])
-  const [bannerMediaOpen, setBannerMediaOpen] = useState(false)
-  const [bannerSelectedMedia, setBannerSelectedMedia] = useState([])
 
   const [baseline, setBaseline] = useState(null)
+
+  // Sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  // Handle drag end for reordering
+  const handleDragEnd = (event) => {
+    const { active, over } = event
+
+    if (active.id !== over.id) {
+      const currentImages = form.getValues('sliderImages') || []
+      const oldIndex = currentImages.findIndex((item, index) => (item.id || index) === active.id)
+      const newIndex = currentImages.findIndex((item, index) => (item.id || index) === over.id)
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reorderedImages = arrayMove(currentImages, oldIndex, newIndex)
+        form.setValue('sliderImages', reorderedImages)
+      }
+    }
+  }
 
   const emailOrEmpty = z.union([z.string().email('Invalid email.'), z.literal('')])
   const phoneOrEmpty = z.union([
@@ -102,14 +190,6 @@ const SiteConfiguration = () => {
       alt: z.string().optional(),
       link: z.string().url().optional(),
     })).optional(),
-    bannerImages: z.array(z.object({
-      id: z.string().optional(),
-      url: z.string().url().optional(),
-      secure_url: z.string().url().optional(),
-      public_id: z.string().optional(),
-      alt: z.string().optional(),
-      link: z.string().url().optional(),
-    })).optional(),
   })
 
   const form = useForm({
@@ -141,11 +221,11 @@ const SiteConfiguration = () => {
       invoiceTemplateMedia: null,
       shippingLabelTemplateMedia: null,
       sliderImages: [],
-      bannerImages: [],
     },
   })
 
   const { data, error: configError, refetch } = useFetch('/api/site-config')
+  const { data: homeConfig, error: homeConfigError } = useFetch('/api/site-config/home')
 
   const getApiErrorMessage = (error, fallback = 'Something went wrong.') => {
     const apiMessage = error?.response?.data?.message
@@ -193,6 +273,15 @@ const SiteConfiguration = () => {
     }
   }, [data])
 
+  // Load home config separately
+  useEffect(() => {
+    console.log('homeConfig:', homeConfig)
+    if (homeConfig?.data) {
+      console.log('Setting slider images:', homeConfig.data.sliderImages)
+      form.setValue('sliderImages', homeConfig.data.sliderImages || [])
+    }
+  }, [homeConfig, form])
+
   const parseEmails = (value) => {
     return (value || '')
       .split(/[\n,]+/)
@@ -205,6 +294,9 @@ const SiteConfiguration = () => {
 
     const emails = (config?.contactNotificationEmails || []).join('\n')
     const orderEmails = (config?.orderNotificationEmails || []).join('\n')
+
+    // Get current slider images to preserve them
+    const currentSliderImages = form.getValues('sliderImages') || []
 
     form.reset({
       contactNotificationEmailsText: emails,
@@ -230,8 +322,7 @@ const SiteConfiguration = () => {
       invoiceFooterNote: config?.invoiceFooterNote || '',
       invoiceTemplateMedia: config?.invoiceTemplateMedia?._id || null,
       shippingLabelTemplateMedia: config?.shippingLabelTemplateMedia?._id || null,
-      sliderImages: config?.sliderImages || [],
-      bannerImages: config?.bannerImages || [],
+      sliderImages: currentSliderImages, // Preserve slider images
     })
 
     if (config?.invoiceTemplateMedia?._id) {
@@ -457,7 +548,6 @@ const SiteConfiguration = () => {
     try {
       const { data: res } = await axios.put('/api/site-config/home', {
         sliderImages: values.sliderImages || [],
-        bannerImages: values.bannerImages || [],
       })
 
       if (!res.success) throw new Error(res.message)
@@ -537,72 +627,74 @@ const SiteConfiguration = () => {
                 <div className='space-y-4'>
                   <div>
                     <h5 className='font-medium mb-2'>Slider Images (Carousel)</h5>
+                    <p className='text-sm text-gray-600 mb-3'>
+                      {form.watch('sliderImages')?.length || 0} of 4 images added
+                    </p>
+                    {/* Debug info */}
+                    <details className="text-xs text-gray-400 mb-3">
+                      <summary>Debug Info</summary>
+                      <pre>{JSON.stringify(form.watch('sliderImages'), null, 2)}</pre>
+                    </details>
+                    <p className='text-xs text-gray-500 mb-3'>
+                      Drag and drop to reorder images
+                    </p>
                     <div className='border rounded-lg p-4'>
-                      <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mb-4'>
-                        {form.watch('sliderImages')?.map((image, index) => (
-                          <div key={index} className='relative group'>
-                            <img 
-                              src={image.secure_url || image.url} 
-                              alt={image.alt || `Slider ${index + 1}`}
-                              className='w-full h-32 object-cover rounded border'
-                            />
-                            <button
-                              type='button'
-                              onClick={() => {
-                                const currentImages = form.getValues('sliderImages') || []
-                                const newImages = currentImages.filter((_, i) => i !== index)
-                                form.setValue('sliderImages', newImages)
-                              }}
-                              className='absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity'
-                            >
-                              ×
-                            </button>
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={form.watch('sliderImages')?.map((img, index) => img.id || index) || []}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mb-4'>
+                            {form.watch('sliderImages')?.map((image, index) => (
+                              <SortableImageItem
+                                key={image.id || index}
+                                image={image}
+                                index={index}
+                                onRemove={(idx) => {
+                                  const currentImages = form.getValues('sliderImages') || []
+                                  const newImages = currentImages.filter((_, i) => i !== idx)
+                                  form.setValue('sliderImages', newImages)
+                                }}
+                              />
+                            ))}
+                            {(form.watch('sliderImages')?.length || 0) < 4 && (
+                              Array(4 - (form.watch('sliderImages')?.length || 0)).fill(0).map((_, index) => (
+                                <div key={`empty-${index}`} className='border-2 border-dashed border-gray-300 rounded-lg h-32 flex items-center justify-center'>
+                                  <span className='text-gray-400 text-sm'>Empty slot</span>
+                                </div>
+                              ))
+                            )}
                           </div>
-                        ))}
-                      </div>
-                      <div onClick={() => {
-                        setSliderMediaOpen(true)
-                        setSliderSelectedMedia([])
-                      }} className='bg-gray-50 dark:bg-card border w-full mx-auto p-5 cursor-pointer text-center'>
-                        <span className='font-semibold'>+ Add Slider Images</span>
+                        </SortableContext>
+                      </DndContext>
+                      <div 
+                        onClick={() => {
+                          if ((form.watch('sliderImages')?.length || 0) < 4) {
+                            setSliderMediaOpen(true)
+                            setSliderSelectedMedia([])
+                          }
+                        }} 
+                        className={`bg-gray-50 dark:bg-card border w-full mx-auto p-5 cursor-pointer text-center transition-colors ${
+                          (form.watch('sliderImages')?.length || 0) >= 4 
+                            ? 'opacity-50 cursor-not-allowed' 
+                            : 'hover:bg-gray-100'
+                        }`}
+                      >
+                        <span className='font-semibold'>
+                          {(form.watch('sliderImages')?.length || 0) >= 4 
+                            ? 'Maximum 4 images reached' 
+                            : '+ Add Slider Images (Select Multiple)'
+                          }
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <div>
-                    <h5 className='font-medium mb-2'>Banner Images</h5>
-                    <div className='border rounded-lg p-4'>
-                      <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mb-4'>
-                        {form.watch('bannerImages')?.map((image, index) => (
-                          <div key={index} className='relative group'>
-                            <img 
-                              src={image.secure_url || image.url} 
-                              alt={image.alt || `Banner ${index + 1}`}
-                              className='w-full h-32 object-cover rounded border'
-                            />
-                            <button
-                              type='button'
-                              onClick={() => {
-                                const currentImages = form.getValues('bannerImages') || []
-                                const newImages = currentImages.filter((_, i) => i !== index)
-                                form.setValue('bannerImages', newImages)
-                              }}
-                              className='absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity'
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <div onClick={() => {
-                        setBannerMediaOpen(true)
-                        setBannerSelectedMedia([])
-                      }} className='bg-gray-50 dark:bg-card border w-full mx-auto p-5 cursor-pointer text-center'>
-                        <span className='font-semibold'>+ Add Banner Images</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                                  </div>
 
                 <div className='flex gap-3 flex-wrap mt-4'>
                   <ButtonLoading loading={loadingHome} type="button" text="Save Home Settings" className="cursor-pointer" onClick={saveHome} />
@@ -903,7 +995,9 @@ const SiteConfiguration = () => {
           setSliderSelectedMedia(m)
           if (m && m.length > 0) {
             const currentImages = form.getValues('sliderImages') || []
-            const newImages = [...currentImages, ...m.map(media => ({
+            const availableSlots = 4 - currentImages.length
+            const mediaToAdd = m.slice(0, availableSlots) // Limit to available slots
+            const newImages = [...currentImages, ...mediaToAdd.map(media => ({
               id: media._id,
               url: media.url,
               secure_url: media.secure_url,
@@ -912,6 +1006,11 @@ const SiteConfiguration = () => {
               link: ''
             }))]
             form.setValue('sliderImages', newImages)
+            
+            // Show warning if some images were not added due to limit
+            if (m.length > availableSlots) {
+              showToast('warning', `Only ${availableSlots} image(s) were added. Maximum limit is 4 images.`)
+            }
           }
           setSliderMediaOpen(false)
           setSliderSelectedMedia([])
@@ -919,30 +1018,7 @@ const SiteConfiguration = () => {
         isMultiple={true}
       />
 
-      <MediaModal
-        open={bannerMediaOpen}
-        setOpen={setBannerMediaOpen}
-        selectedMedia={bannerSelectedMedia}
-        setSelectedMedia={(m) => {
-          setBannerSelectedMedia(m)
-          if (m && m.length > 0) {
-            const currentImages = form.getValues('bannerImages') || []
-            const newImages = [...currentImages, ...m.map(media => ({
-              id: media._id,
-              url: media.url,
-              secure_url: media.secure_url,
-              public_id: media.public_id,
-              alt: media.alt || '',
-              link: ''
-            }))]
-            form.setValue('bannerImages', newImages)
-          }
-          setBannerMediaOpen(false)
-          setBannerSelectedMedia([])
-        }}
-        isMultiple={true}
-      />
-    </div>
+          </div>
   )
 }
 

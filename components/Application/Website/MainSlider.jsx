@@ -54,29 +54,44 @@ const MainSlider = ({ images = [] }) => {
     }
 
     const imagesToShow = images.length > 0 ? images : [
-        { src: slider1.src, width: slider1.width, height: slider1.height, alt: 'slider 1' },
-        { src: slider2.src, width: slider2.width, height: slider2.height, alt: 'slider 2' },
-        { src: slider3.src, width: slider3.width, height: slider3.height, alt: 'slider 3' },
-        { src: slider4.src, width: slider4.width, height: slider4.height, alt: 'slider 4' }
+        { src: slider1.src, width: slider1.width, height: slider1.height, alt: 'slider 1', isStatic: true },
+        { src: slider2.src, width: slider2.width, height: slider2.height, alt: 'slider 2', isStatic: true },
+        { src: slider3.src, width: slider3.width, height: slider3.height, alt: 'slider 3', isStatic: true },
+        { src: slider4.src, width: slider4.width, height: slider4.height, alt: 'slider 4', isStatic: true }
     ]
 
     return (
         <div>
             <Slider {...settings}>
                 {imagesToShow.map((image, index) => (
-                    <div key={index}>
-                        {image.secure_url ? (
+                    <div key={index} className="outline-none">
+                        {image.secure_url || image.url ? (
                             <img 
-                                src={image.secure_url} 
+                                src={image.secure_url || image.url} 
                                 alt={image.alt || `Slider ${index + 1}`} 
-                                className="w-full h-auto"
+                                className="w-full h-auto object-cover"
+                                style={{ maxHeight: '500px' }}
                             />
+                        ) : image.isStatic ? (
+                            <div style={{ position: 'relative', width: '100%', height: '500px' }}>
+                                <Image 
+                                    src={image.src} 
+                                    fill
+                                    sizes="100vw"
+                                    alt={image.alt} 
+                                    className="object-cover"
+                                    priority={index === 0}
+                                />
+                            </div>
                         ) : (
                             <Image 
                                 src={image.src} 
-                                width={image.width} 
-                                height={image.height} 
-                                alt={image.alt} 
+                                width={image.width || 1920}
+                                height={image.height || 1080}
+                                alt={image.alt || `Slider ${index + 1}`} 
+                                className="w-full h-auto object-cover"
+                                style={{ maxHeight: '500px' }}
+                                priority={index === 0}
                             />
                         )}
                     </div>
