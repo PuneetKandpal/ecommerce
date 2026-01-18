@@ -1,5 +1,6 @@
 import React from "react";
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
+import { getOrderStatusLabel, isPaymentPendingStatus } from "@/lib/orderStatusText";
 
 const formatMoney = (n) => {
     const num = typeof n === 'number' ? n : Number(n || 0);
@@ -59,6 +60,9 @@ export default function InvoiceDocument({ order, config }) {
     const logoUrl = config?.invoiceTemplateMedia?.secure_url;
     const showLogo = logoUrl && !isPdfUrl(logoUrl);
 
+    const statusLabel = getOrderStatusLabel(order?.status || 'pending');
+    const showBank = isPaymentPendingStatus(order?.status);
+
     const products = Array.isArray(order?.products) ? order.products : [];
 
     return (
@@ -92,7 +96,7 @@ export default function InvoiceDocument({ order, config }) {
                             </View>
                             <View style={styles.metaRow}>
                                 <Text style={styles.metaKey}>Status:</Text>
-                                <Text>{String(order?.status || 'pending')}</Text>
+                                <Text>{statusLabel}</Text>
                             </View>
                         </View>
                     </View>
@@ -154,15 +158,23 @@ export default function InvoiceDocument({ order, config }) {
                 </View>
 
                 <View style={styles.totalsRow}>
-                    <View style={styles.bankBox}>
-                        <Text style={styles.boxTitle}>Bank Details</Text>
-                        {bank?.accountName ? <Text>A/C Name: {bank.accountName}</Text> : null}
-                        {bank?.accountNumber ? <Text>A/C No: {bank.accountNumber}</Text> : null}
-                        {bank?.bankName ? <Text>Bank: {bank.bankName}</Text> : null}
-                        {bank?.ifsc ? <Text>IFSC: {bank.ifsc}</Text> : null}
-                        {bank?.branch ? <Text>Branch: {bank.branch}</Text> : null}
-                        {bank?.upiId ? <Text>UPI: {bank.upiId}</Text> : null}
-                    </View>
+                    {showBank ? (
+                        <View style={styles.bankBox}>
+                            <Text style={styles.boxTitle}>Payment Details</Text>
+                            <Text>Please make the payment to the account below.</Text>
+                            {bank?.accountName ? <Text>A/C Name: {bank.accountName}</Text> : null}
+                            {bank?.accountNumber ? <Text>A/C No: {bank.accountNumber}</Text> : null}
+                            {bank?.bankName ? <Text>Bank: {bank.bankName}</Text> : null}
+                            {bank?.ifsc ? <Text>IFSC: {bank.ifsc}</Text> : null}
+                            {bank?.branch ? <Text>Branch: {bank.branch}</Text> : null}
+                            {bank?.upiId ? <Text>UPI: {bank.upiId}</Text> : null}
+                        </View>
+                    ) : (
+                        <View style={styles.bankBox}>
+                            <Text style={styles.boxTitle}>Payment</Text>
+                            <Text>Payment status: {statusLabel}</Text>
+                        </View>
+                    )}
 
                     <View style={styles.totalsBox}>
                         <View style={styles.kv}>

@@ -37,6 +37,7 @@ export async function GET() {
                     variantId: '64f000000000000000000101',
                     name: 'Sample Item A',
                     qty: 2,
+                    mrp: 249.5,
                     sellingPrice: 199.5,
                 },
                 {
@@ -44,15 +45,16 @@ export async function GET() {
                     variantId: '64f000000000000000000102',
                     name: 'Sample Item B with a longer name',
                     qty: 1,
+                    mrp: 599,
                     sellingPrice: 499,
                 },
             ],
         };
 
-        dummyOrder.subtotal = dummyOrder.products.reduce((acc, p) => acc + (Number(p.qty) || 0) * (Number(p.sellingPrice) || 0), 0);
-        dummyOrder.discount = 0;
+        dummyOrder.subtotal = dummyOrder.products.reduce((acc, p) => acc + (Number(p.qty) || 0) * (Number(p.mrp) || 0), 0);
+        dummyOrder.discount = dummyOrder.products.reduce((acc, p) => acc + (Number(p.qty) || 0) * ((Number(p.mrp) || 0) - (Number(p.sellingPrice) || 0)), 0);
         dummyOrder.couponDiscountAmount = 0;
-        dummyOrder.totalAmount = dummyOrder.subtotal;
+        dummyOrder.totalAmount = dummyOrder.subtotal - dummyOrder.discount;
 
         const element = React.createElement(InvoiceDocument, { order: dummyOrder, config });
         return await renderPdfResponse({ element, filename: 'invoice-preview.pdf' });

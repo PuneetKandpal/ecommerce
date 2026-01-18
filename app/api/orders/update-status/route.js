@@ -1,7 +1,11 @@
 import { isAuthenticated } from "@/lib/authentication";
 import { connectDB } from "@/lib/databaseConnection";
 import { catchError, response } from "@/lib/helperFunction";
+import { getMergedSiteConfig } from "@/lib/getSiteConfig";
+import { sendMail } from "@/lib/sendMail";
+import { getOrderStatusLabel } from "@/lib/orderStatusText";
 import OrderModel from "@/models/Order.model";
+import { orderPlacedUserEmail } from "@/email/orderPlacedUserEmail";
 
 export async function PUT(request) {
     try {
@@ -26,6 +30,37 @@ export async function PUT(request) {
 
         orderData.status = status
         await orderData.save()
+
+        try {
+            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL || '';
+            const orderDetailsUrl = `${baseUrl}/order-details/${orderData.order_id}`;
+            const invoiceUrl = `${baseUrl}/api/orders/invoice/${orderData.order_id}`;
+
+            let config = null;
+            try {
+                config = await getMergedSiteConfig({ populateMedia: true, includeLegacyFallback: true });
+            } catch (e) {
+                config = null;
+            }
+
+            const statusLabel = getOrderStatusLabel(status);
+
+            await sendMail(
+                `Order status updated (${statusLabel})`,
+                orderData.email,
+                orderPlacedUserEmail({
+                    order_id: orderData.order_id,
+                    orderDetailsUrl,
+                    invoiceUrl,
+                    name: orderData.name,
+                    totalAmount: orderData.totalAmount,
+                    status,
+                    config,
+                })
+            )
+        } catch (error) {
+            console.log(error)
+        }
 
         return response(true, 200, 'Order status updated successfully.', orderData)
 

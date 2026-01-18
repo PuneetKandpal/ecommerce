@@ -4,6 +4,7 @@ import { catchError, response } from "@/lib/helperFunction";
 import { getMergedSiteConfig } from "@/lib/getSiteConfig";
 import { sendMail } from "@/lib/sendMail";
 import { zSchema } from "@/lib/zodSchema";
+import { getOrderStatusLabel } from "@/lib/orderStatusText";
 import OrderModel from "@/models/Order.model";
 import crypto from "crypto";
 import { z } from "zod";
@@ -89,9 +90,17 @@ export async function POST(request) {
         const orderDetailsUrl = `${baseUrl}/order-details/${order_id}`;
         const invoiceUrl = `${baseUrl}/api/orders/invoice/${order_id}`;
 
+        let config = null;
         try {
+            config = await getMergedSiteConfig({ populateMedia: true, includeLegacyFallback: true });
+        } catch (e) {
+            config = null;
+        }
+
+        try {
+            const status = 'pending';
             await sendMail(
-                'Order placed successfully (Pending)',
+                `Order placed successfully (${getOrderStatusLabel(status)})`,
                 validatedData.email,
                 orderPlacedUserEmail({
                     order_id,
@@ -99,7 +108,8 @@ export async function POST(request) {
                     invoiceUrl,
                     name: validatedData.name,
                     totalAmount: validatedData.totalAmount,
-                    status: 'pending'
+                    status,
+                    config,
                 })
             );
         } catch (error) {
@@ -107,7 +117,6 @@ export async function POST(request) {
         }
 
         try {
-            const config = await getMergedSiteConfig({ includeLegacyFallback: true });
             const recipients = (config?.orderNotificationEmails || []).filter(Boolean);
             const receiver = recipients.length ? recipients.join(',') : process.env.NODEMAILER_EMAIL;
 
@@ -119,6 +128,7 @@ export async function POST(request) {
                         order_id,
                         orderDetailsUrl,
                         invoiceUrl,
+                        config,
                         order: {
                             name: validatedData.name,
                             email: validatedData.email,

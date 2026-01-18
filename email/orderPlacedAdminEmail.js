@@ -1,3 +1,6 @@
+import { emailLayout } from "@/email/emailLayout";
+import { getOrderStatusLabel } from "@/lib/orderStatusText";
+
 const money = (n) => {
     const num = typeof n === 'number' ? n : Number(n || 0);
     return num.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
@@ -19,11 +22,12 @@ export const orderPlacedAdminEmail = (data) => {
         `;
     }).join('');
 
-    const html = `
-        <div style="font-family:Arial,sans-serif;line-height:1.5">
-            <h2 style="margin:0 0 12px">New Order Received</h2>
+    const statusLabel = getOrderStatusLabel(o.status || 'pending');
+
+    const bodyHtml = `
+        <div style="font-size:14px;line-height:1.6;">
             <p style="margin:0 0 12px"><b>Order ID:</b> ${data.order_id}</p>
-            <p style="margin:0 0 12px"><b>Status:</b> ${o.status || 'pending'}</p>
+            <p style="margin:0 0 12px"><b>Status:</b> ${statusLabel}</p>
 
             <h3 style="margin:16px 0 8px">Customer</h3>
             <p style="margin:0">${o.name}</p>
@@ -61,5 +65,10 @@ export const orderPlacedAdminEmail = (data) => {
         </div>
     `;
 
-    return html;
+    return emailLayout({
+        title: 'New order received',
+        bodyHtml,
+        config: data?.config,
+        previewText: `New order received • ${data.order_id}`,
+    });
 };
