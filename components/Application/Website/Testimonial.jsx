@@ -1,32 +1,11 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import Slider from 'react-slick'
-import 'slick-carousel/slick/slick.css'
-import 'slick-carousel/slick/slick-theme.css'
 import { FaQuoteLeft, FaQuoteRight } from 'react-icons/fa'
 import { AiFillStar } from 'react-icons/ai'
-import axios from 'axios'
 
-const Testimonial = () => {
-  const [testimonials, setTestimonials] = useState([])
-
-  useEffect(() => {
-    fetchTestimonials()
-  }, [])
-
-  const fetchTestimonials = async () => {
-    try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-      const { data: res } = await axios.get(`${baseUrl}/api/testimonials`)
-
-      if (res?.success && res?.data?.length) {
-        setTestimonials(res.data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch testimonials:', error)
-    }
-  }
+const Testimonial = ({ testimonials = [] }) => {
 
   const settings = {
     dots: true,
@@ -89,7 +68,7 @@ const Testimonial = () => {
                 <div className='flex justify-center mb-4'>
                   <FaQuoteLeft className='text-3xl text-gray-300' />
                 </div>
-                <p className='text-gray-700 dark:text-gray-300 mb-6 italic'>{testimonial.review}</p>
+                <p className='text-gray-700 dark:text-gray-300 mb-6 italic'>{testimonial.content || testimonial.review}</p>
                 <div className='flex justify-center mb-4'>
                   {[...Array(5)].map((_, i) => (
                     <AiFillStar

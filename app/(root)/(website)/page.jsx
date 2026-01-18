@@ -63,6 +63,8 @@ const Home = async () => {
     }
 
     const sliderImages = homeConfig?.data?.sliderImages || []
+    const bannerSectionImages = homeConfig?.data?.bannerSectionImages || []
+    const testimonials = homeConfig?.data?.testimonials || []
 
     return (
         <>
@@ -100,16 +102,31 @@ const Home = async () => {
             <FeaturedProduct />
 
             <section className='sm:pt-20 pt-5 pb-10'>
-                <Image
-                    src={advertisingBanner.src}
-                    height={advertisingBanner.height}
-                    width={advertisingBanner.width}
-                    alt='Advertisement'
-
-                />
+                {bannerSectionImages?.length ? (
+                    <div className='lg:px-32 px-4'>
+                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                            {bannerSectionImages.slice(0, 2).map((img, idx) => (
+                                <div key={img.id || idx} className='overflow-hidden rounded-lg'>
+                                    <img
+                                        src={img.secure_url || img.url}
+                                        alt={img.alt || `Banner ${idx + 1}`}
+                                        className='w-full h-auto object-cover'
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <Image
+                        src={advertisingBanner.src}
+                        height={advertisingBanner.height}
+                        width={advertisingBanner.width}
+                        alt='Advertisement'
+                    />
+                )}
             </section>
 
-            <Testimonial />
+            <Testimonial testimonials={testimonials} />
 
             <section className='lg:px-32 px-4  border-t py-10'>
                 <div className='grid lg:grid-cols-4 sm:grid-cols-2 grid-cols-1 gap-10'>

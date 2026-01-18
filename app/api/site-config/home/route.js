@@ -24,6 +24,12 @@ const sliderImageObject = z.object({
 
 const schema = z.object({
   sliderImages: z.array(sliderImageObject).optional(),
+  bannerSectionImages: z.array(sliderImageObject).max(2).optional(),
+  testimonials: z.array(z.object({
+    name: z.string().optional(),
+    rating: z.number().min(1).max(5).optional(),
+    content: z.string().optional(),
+  })).optional(),
 })
 
 export async function GET() {
