@@ -124,6 +124,44 @@ const SiteConfiguration = () => {
 
   const { data, error: configError, refetch } = useFetch('/api/site-config')
 
+  const getApiErrorMessage = (error, fallback = 'Something went wrong.') => {
+    const apiMessage = error?.response?.data?.message
+    const issues = error?.response?.data?.data?.issues
+    const issueMessage = Array.isArray(issues) && issues.length ? issues[0]?.message : null
+    return issueMessage || apiMessage || error?.message || fallback
+  }
+
+  const invoicePathToFormField = {
+    'invoiceCompany.name': 'invoiceCompanyName',
+    'invoiceCompany.email': 'invoiceCompanyEmail',
+    'invoiceCompany.phone': 'invoiceCompanyPhone',
+    'invoiceCompany.gstin': 'invoiceCompanyGstin',
+    'invoiceCompany.addressLine1': 'invoiceCompanyAddressLine1',
+    'invoiceCompany.addressLine2': 'invoiceCompanyAddressLine2',
+    'invoiceCompany.city': 'invoiceCompanyCity',
+    'invoiceCompany.state': 'invoiceCompanyState',
+    'invoiceCompany.pincode': 'invoiceCompanyPincode',
+    'invoiceCompany.country': 'invoiceCompanyCountry',
+    invoiceTerms: 'invoiceTerms',
+    invoiceFooterNote: 'invoiceFooterNote',
+    invoiceTemplateMedia: 'invoiceTemplateMedia',
+  }
+
+  const applyInvoiceFieldErrors = (issues = []) => {
+    // Clear previous invoice-related errors
+    Object.values(invoicePathToFormField).forEach(fieldName => {
+      form.clearErrors(fieldName)
+    })
+
+    issues.forEach((issue) => {
+      const path = Array.isArray(issue?.path) ? issue.path.join('.') : ''
+      const fieldName = path && invoicePathToFormField[path]
+      if (fieldName) {
+        form.setError(fieldName, { message: issue?.message || 'Invalid value.' })
+      }
+    })
+  }
+
   useEffect(() => {
     if (data?.success && data.data) {
       const config = data.data
@@ -307,8 +345,12 @@ const SiteConfiguration = () => {
       showToast('success', res.message)
       await refetch()
     } catch (error) {
-      const apiMessage = error?.response?.data?.message
-      showToast('error', apiMessage || error.message)
+      const issues = error?.response?.data?.data?.issues
+      console.log('Invoice save error:', { error, issues })
+      if (Array.isArray(issues) && issues.length) {
+        applyInvoiceFieldErrors(issues)
+      }
+      showToast('error', getApiErrorMessage(error, 'Failed to save invoice settings.'))
     } finally {
       setLoadingInvoice(false)
     }
@@ -564,8 +606,41 @@ const SiteConfiguration = () => {
                   </div>
                 </div>
 
+                <div className='mt-6 border-t pt-5'>
+                  <h4 className='text-base font-semibold mb-3'>Invoice Notes</h4>
+                  <div className='grid md:grid-cols-2 grid-cols-1 gap-4'>
+                    <FormField
+                      control={form.control}
+                      name="invoiceTerms"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Terms</FormLabel>
+                          <FormControl>
+                            <Textarea rows={6} placeholder="Payment terms, return policy, etc." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="invoiceFooterNote"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Footer Note</FormLabel>
+                          <FormControl>
+                            <Textarea rows={6} placeholder="Thank you note / disclaimer" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
                 <div className='mt-4 flex gap-3 flex-wrap'>
-                  <ButtonLoading loading={loadingInvoice} type="button" text="Save Invoice" className="cursor-pointer" onClick={saveInvoice} />
+                  <ButtonLoading loading={loadingInvoice} type="button" text="Save Invoice & Notes" className="cursor-pointer" onClick={saveInvoice} />
                   <ButtonLoading loading={false} type="button" text="Cancel" className="cursor-pointer" onClick={cancelInvoice} />
                 </div>
 
@@ -622,37 +697,9 @@ const SiteConfiguration = () => {
                   </div>
                 </div>
 
-                <div className='mt-6 border-t pt-5'>
-                  <h4 className='text-base font-semibold mb-3'>Invoice Notes</h4>
-                  <div className='grid md:grid-cols-2 grid-cols-1 gap-4'>
-                    <FormField
-                      control={form.control}
-                      name="invoiceTerms"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Terms</FormLabel>
-                          <FormControl>
-                            <Textarea rows={6} placeholder="Payment terms, return policy, etc." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="invoiceFooterNote"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Footer Note</FormLabel>
-                          <FormControl>
-                            <Textarea rows={6} placeholder="Thank you note / disclaimer" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                <div className='mt-4 flex gap-3 flex-wrap'>
+                  <ButtonLoading loading={loadingBank} type="button" text="Save Bank Details" className="cursor-pointer" onClick={saveBank} />
+                  <ButtonLoading loading={false} type="button" text="Cancel" className="cursor-pointer" onClick={cancelBank} />
                 </div>
 
                 <div className='mt-6 border-t pt-5'>

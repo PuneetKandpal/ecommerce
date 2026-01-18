@@ -2,7 +2,7 @@ import { isAuthenticated } from "@/lib/authentication";
 import { connectDB } from "@/lib/databaseConnection";
 import { catchError, response } from "@/lib/helperFunction";
 import { getMergedSiteConfig } from "@/lib/getSiteConfig";
-import SiteConfigModel from "@/models/SiteConfig.model";
+import { SITE_CONFIG_GROUP_KEYS, setSiteConfigGroup } from "@/lib/getSiteConfig";
 import { z } from "zod";
 
 export const dynamic = 'force-dynamic'
@@ -71,30 +71,32 @@ export async function PUT(request) {
 
         const data = validate.data
 
-        const updated = await SiteConfigModel.findOneAndUpdate(
-            {},
-            {
-                $set: {
-                    contactNotificationEmails: data.contactNotificationEmails,
-                    orderNotificationEmails: data.orderNotificationEmails,
-                    invoiceCompany: data.invoiceCompany,
-                    bankDetails: data.bankDetails,
-                    invoiceTerms: data.invoiceTerms,
-                    invoiceFooterNote: data.invoiceFooterNote,
-                    invoiceTemplateMedia: data.invoiceTemplateMedia,
-                    shippingLabelTemplateMedia: data.shippingLabelTemplateMedia,
-                    sendContactCopyToUser: data.sendContactCopyToUser,
-                }
-            },
-            {
-                new: true,
-                upsert: true,
-                setDefaultsOnInsert: true,
-                sort: { updatedAt: -1, createdAt: -1 },
-            }
-        ).lean()
+        await setSiteConfigGroup(SITE_CONFIG_GROUP_KEYS.NOTIFICATIONS, {
+            contactNotificationEmails: data.contactNotificationEmails,
+            orderNotificationEmails: data.orderNotificationEmails,
+        });
 
-        return response(true, 200, 'Site config updated.', updated)
+        await setSiteConfigGroup(SITE_CONFIG_GROUP_KEYS.BANK, {
+            bankDetails: data.bankDetails,
+        });
+
+        await setSiteConfigGroup(SITE_CONFIG_GROUP_KEYS.INVOICE, {
+            invoiceCompany: data.invoiceCompany,
+            invoiceTerms: data.invoiceTerms,
+            invoiceFooterNote: data.invoiceFooterNote,
+            invoiceTemplateMedia: data.invoiceTemplateMedia,
+        });
+
+        await setSiteConfigGroup(SITE_CONFIG_GROUP_KEYS.SHIPPING, {
+            shippingLabelTemplateMedia: data.shippingLabelTemplateMedia,
+        });
+
+        await setSiteConfigGroup(SITE_CONFIG_GROUP_KEYS.GENERAL, {
+            sendContactCopyToUser: data.sendContactCopyToUser,
+        });
+
+        const merged = await getMergedSiteConfig({ populateMedia: true, includeLegacyFallback: true });
+        return response(true, 200, 'Site config updated.', merged)
 
     } catch (error) {
         return catchError(error)

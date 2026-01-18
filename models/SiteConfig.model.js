@@ -1,6 +1,18 @@
 import mongoose from "mongoose";
 
 const siteConfigSchema = new mongoose.Schema({
+    key: {
+        type: String,
+        default: null,
+        trim: true,
+        index: true,
+    },
+
+    data: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+    },
+
     contactNotificationEmails: {
         type: [String],
         default: [],
@@ -54,6 +66,8 @@ const siteConfigSchema = new mongoose.Schema({
         default: false,
     },
 }, { timestamps: true })
+
+siteConfigSchema.index({ key: 1 }, { unique: true, sparse: true });
 
 if (mongoose.models.SiteConfig) {
     delete mongoose.models.SiteConfig;
