@@ -25,6 +25,12 @@ const sliderImageObject = z.object({
 const schema = z.object({
   sliderImages: z.array(sliderImageObject).optional(),
   bannerSectionImages: z.array(sliderImageObject).max(2).optional(),
+  brandsMarqueeCompanies: z.array(z.object({
+    name: z.string().optional(),
+    description: z.string().optional(),
+    link: z.string().optional(),
+    logo: sliderImageObject.optional(),
+  })).optional(),
   testimonials: z.array(z.object({
     name: z.string().optional(),
     rating: z.number().min(1).max(5).optional(),

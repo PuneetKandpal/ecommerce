@@ -7,6 +7,7 @@ import React from 'react'
 import FeaturedProduct from '@/components/Application/Website/FeaturedProduct'
 import advertisingBanner from '@/public/assets/images/advertising-banner.png'
 import Testimonial from '@/components/Application/Website/Testimonial'
+import BrandsMarquee from '@/components/Application/Website/BrandsMarquee'
 import imgPlaceholder from '@/public/assets/images/img-placeholder.webp'
 import { WEBSITE_SHOP } from '@/routes/WebsiteRoute'
 
@@ -65,6 +66,7 @@ const Home = async () => {
     const sliderImages = homeConfig?.data?.sliderImages || []
     const bannerSectionImages = homeConfig?.data?.bannerSectionImages || []
     const testimonials = homeConfig?.data?.testimonials || []
+    const brandsMarqueeCompanies = homeConfig?.data?.brandsMarqueeCompanies || []
 
     return (
         <>
@@ -98,6 +100,8 @@ const Home = async () => {
                     </div>
                 </section>
             }
+
+            <BrandsMarquee companies={brandsMarqueeCompanies} />
 
             <FeaturedProduct />
 

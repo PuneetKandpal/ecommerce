@@ -16,77 +16,11 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import Image from 'next/image'
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import {
-  useSortable,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { GripVertical } from 'lucide-react'
 
 const breadcrumbData = [
   { href: ADMIN_DASHBOARD, label: 'Home' },
   { href: ADMIN_SITE_CONFIGURATION, label: 'Site Configuration' },
 ]
-
-// Sortable Image Item Component
-const SortableImageItem = ({ image, index, onRemove }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: image.id || index })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="relative group"
-    >
-      <div
-        className="absolute top-1 left-1 z-10 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded cursor-move flex items-center gap-1"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical size={12} />
-        {index + 1}
-      </div>
-      <img
-        src={image.secure_url || image.url}
-        alt={image.alt || `Slider ${index + 1}`}
-        className="w-full h-32 object-cover rounded border"
-      />
-      <button
-        type='button'
-        onClick={() => onRemove(index)}
-        className='absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10'
-      >
-        ×
-      </button>
-    </div>
-  )
-}
 
 const SiteConfiguration = () => {
   const [loadingNotifications, setLoadingNotifications] = useState(false)
@@ -94,41 +28,11 @@ const SiteConfiguration = () => {
   const [loadingBank, setLoadingBank] = useState(false)
   const [loadingShipping, setLoadingShipping] = useState(false)
   const [loadingGeneral, setLoadingGeneral] = useState(false)
-  const [loadingHome, setLoadingHome] = useState(false)
   const [invoiceMediaOpen, setInvoiceMediaOpen] = useState(false)
   const [invoiceSelectedMedia, setInvoiceSelectedMedia] = useState([])
   const [shippingMediaOpen, setShippingMediaOpen] = useState(false)
   const [shippingSelectedMedia, setShippingSelectedMedia] = useState([])
-  const [sliderMediaOpen, setSliderMediaOpen] = useState(false)
-  const [sliderSelectedMedia, setSliderSelectedMedia] = useState([])
-  const [bannerSectionMediaOpen, setBannerSectionMediaOpen] = useState(false)
-  const [bannerSectionSelectedMedia, setBannerSectionSelectedMedia] = useState([])
-
   const [baseline, setBaseline] = useState(null)
-
-  // Sensors for drag and drop
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  )
-
-  // Handle drag end for reordering
-  const handleDragEnd = (event) => {
-    const { active, over } = event
-
-    if (active.id !== over.id) {
-      const currentImages = form.getValues('sliderImages') || []
-      const oldIndex = currentImages.findIndex((item, index) => (item.id || index) === active.id)
-      const newIndex = currentImages.findIndex((item, index) => (item.id || index) === over.id)
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const reorderedImages = arrayMove(currentImages, oldIndex, newIndex)
-        form.setValue('sliderImages', reorderedImages)
-      }
-    }
-  }
 
   const emailOrEmpty = z.union([z.string().email('Invalid email.'), z.literal('')])
   const phoneOrEmpty = z.union([
@@ -184,27 +88,6 @@ const SiteConfiguration = () => {
     invoiceFooterNote: z.string().optional(),
     invoiceTemplateMedia: objectIdOrNull.optional(),
     shippingLabelTemplateMedia: objectIdOrNull.optional(),
-    sliderImages: z.array(z.object({
-      id: z.string().optional(),
-      url: z.string().url().optional(),
-      secure_url: z.string().url().optional(),
-      public_id: z.string().optional(),
-      alt: z.string().optional(),
-      link: z.string().url().optional(),
-    })).optional(),
-    bannerSectionImages: z.array(z.object({
-      id: z.string().optional(),
-      url: z.string().url().optional(),
-      secure_url: z.string().url().optional(),
-      public_id: z.string().optional(),
-      alt: z.string().optional(),
-      link: z.string().url().optional(),
-    })).max(2).optional(),
-    testimonials: z.array(z.object({
-      name: z.string().optional(),
-      rating: z.number().min(1).max(5).optional(),
-      content: z.string().optional(),
-    })).optional(),
   })
 
   const form = useForm({
@@ -235,14 +118,10 @@ const SiteConfiguration = () => {
       invoiceFooterNote: '',
       invoiceTemplateMedia: null,
       shippingLabelTemplateMedia: null,
-      sliderImages: [],
-      bannerSectionImages: [],
-      testimonials: [],
     },
   })
 
   const { data, error: configError, refetch } = useFetch('/api/site-config')
-  const { data: homeConfig, error: homeConfigError, refetch: refetchHome } = useFetch('/api/site-config/home')
 
   const getApiErrorMessage = (error, fallback = 'Something went wrong.') => {
     const apiMessage = error?.response?.data?.message
@@ -290,15 +169,6 @@ const SiteConfiguration = () => {
     }
   }, [data])
 
-  // Load home config separately
-  useEffect(() => {
-    if (homeConfig?.data) {
-      form.setValue('sliderImages', homeConfig.data.sliderImages || [])
-      form.setValue('bannerSectionImages', homeConfig.data.bannerSectionImages || [])
-      form.setValue('testimonials', homeConfig.data.testimonials || [])
-    }
-  }, [homeConfig, form])
-
   const parseEmails = (value) => {
     return (value || '')
       .split(/[\n,]+/)
@@ -311,11 +181,6 @@ const SiteConfiguration = () => {
 
     const emails = (config?.contactNotificationEmails || []).join('\n')
     const orderEmails = (config?.orderNotificationEmails || []).join('\n')
-
-    // Preserve home config fields which are loaded separately
-    const currentSliderImages = form.getValues('sliderImages') || []
-    const currentBannerSectionImages = form.getValues('bannerSectionImages') || []
-    const currentHomepageTestimonials = form.getValues('testimonials') || []
 
     form.reset({
       contactNotificationEmailsText: emails,
@@ -341,9 +206,6 @@ const SiteConfiguration = () => {
       invoiceFooterNote: config?.invoiceFooterNote || '',
       invoiceTemplateMedia: config?.invoiceTemplateMedia?._id || null,
       shippingLabelTemplateMedia: config?.shippingLabelTemplateMedia?._id || null,
-      sliderImages: currentSliderImages, // Preserve slider images
-      bannerSectionImages: currentBannerSectionImages, // Preserve banner section images
-      testimonials: currentHomepageTestimonials, // Preserve homepage testimonials
     })
 
     if (config?.invoiceTemplateMedia?._id) {
@@ -563,30 +425,6 @@ const SiteConfiguration = () => {
     }
   }
 
-  const saveHome = async () => {
-    const values = form.getValues()
-    setLoadingHome(true)
-    try {
-      const { data: res } = await axios.put('/api/site-config/home', {
-        sliderImages: values.sliderImages || [],
-        bannerSectionImages: values.bannerSectionImages || [],
-        testimonials: values.testimonials || [],
-      })
-
-      if (!res.success) throw new Error(res.message)
-      showToast('success', res.message)
-      await refetch()
-      if (typeof refetchHome === 'function') {
-        await refetchHome()
-      }
-    } catch (error) {
-      const apiMessage = error?.response?.data?.message
-      showToast('error', apiMessage || error.message)
-    } finally {
-      setLoadingHome(false)
-    }
-  }
-
   return (
     <div>
       <BreadCrumb breadcrumbData={breadcrumbData} />
@@ -645,221 +483,6 @@ const SiteConfiguration = () => {
               <div className='flex gap-3 flex-wrap'>
                 <ButtonLoading loading={loadingNotifications} type="button" text="Save Notifications" className="cursor-pointer" onClick={saveNotifications} />
                 <ButtonLoading loading={false} type="button" text="Cancel" className="cursor-pointer" onClick={cancelNotifications} />
-              </div>
-
-              <div className='border-t pt-5'>
-                <h4 className='text-lg font-semibold mb-3'>Home Page Settings</h4>
-                
-                <div className='space-y-4'>
-                  <div>
-                    <h5 className='font-medium mb-2'>Slider Images (Carousel)</h5>
-                    <p className='text-sm text-gray-600 mb-3'>
-                      {form.watch('sliderImages')?.length || 0} of 4 images added
-                    </p>
-                    <p className='text-xs text-gray-500 mb-3'>
-                      Drag and drop to reorder images
-                    </p>
-                    <div className='border rounded-lg p-4'>
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <SortableContext
-                          items={form.watch('sliderImages')?.map((img, index) => img.id || index) || []}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mb-4'>
-                            {form.watch('sliderImages')?.map((image, index) => (
-                              <SortableImageItem
-                                key={image.id || index}
-                                image={image}
-                                index={index}
-                                onRemove={(idx) => {
-                                  const currentImages = form.getValues('sliderImages') || []
-                                  const newImages = currentImages.filter((_, i) => i !== idx)
-                                  form.setValue('sliderImages', newImages)
-                                }}
-                              />
-                            ))}
-                            {(form.watch('sliderImages')?.length || 0) < 4 && (
-                              Array(4 - (form.watch('sliderImages')?.length || 0)).fill(0).map((_, index) => (
-                                <div key={`empty-${index}`} className='border-2 border-dashed border-gray-300 rounded-lg h-32 flex items-center justify-center'>
-                                  <span className='text-gray-400 text-sm'>Empty slot</span>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </SortableContext>
-                      </DndContext>
-                      <div 
-                        onClick={() => {
-                          if ((form.watch('sliderImages')?.length || 0) < 4) {
-                            setSliderMediaOpen(true)
-                            setSliderSelectedMedia([])
-                          }
-                        }} 
-                        className={`bg-gray-50 dark:bg-card border w-full mx-auto p-5 cursor-pointer text-center transition-colors ${
-                          (form.watch('sliderImages')?.length || 0) >= 4 
-                            ? 'opacity-50 cursor-not-allowed' 
-                            : 'hover:bg-gray-100'
-                        }`}
-                      >
-                        <span className='font-semibold'>
-                          {(form.watch('sliderImages')?.length || 0) >= 4 
-                            ? 'Maximum 4 images reached' 
-                            : '+ Add Slider Images (Select Multiple)'
-                          }
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h5 className='font-medium mb-2'>Banner Section (2 Images)</h5>
-                    <p className='text-sm text-gray-600 mb-3'>
-                      {(form.watch('bannerSectionImages')?.length || 0)} of 2 images added
-                    </p>
-                    <div className='border rounded-lg p-4'>
-                      <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4'>
-                        {form.watch('bannerSectionImages')?.map((image, index) => (
-                          <div key={image.id || index} className='relative group'>
-                            <img
-                              src={image.secure_url || image.url}
-                              alt={image.alt || `Banner ${index + 1}`}
-                              className='w-full h-32 object-cover rounded border'
-                            />
-                            <div className='absolute top-1 left-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded'>
-                              {index + 1}
-                            </div>
-                            <button
-                              type='button'
-                              onClick={() => {
-                                const current = form.getValues('bannerSectionImages') || []
-                                const next = current.filter((_, i) => i !== index)
-                                form.setValue('bannerSectionImages', next)
-                              }}
-                              className='absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity'
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-
-                        {(form.watch('bannerSectionImages')?.length || 0) < 2 && (
-                          Array(2 - (form.watch('bannerSectionImages')?.length || 0)).fill(0).map((_, index) => (
-                            <div key={`banner-empty-${index}`} className='border-2 border-dashed border-gray-300 rounded-lg h-32 flex items-center justify-center'>
-                              <span className='text-gray-400 text-sm'>Empty slot</span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-
-                      <div
-                        onClick={() => {
-                          if ((form.watch('bannerSectionImages')?.length || 0) < 2) {
-                            setBannerSectionMediaOpen(true)
-                            setBannerSectionSelectedMedia([])
-                          }
-                        }}
-                        className={`bg-gray-50 dark:bg-card border w-full mx-auto p-5 cursor-pointer text-center transition-colors ${
-                          (form.watch('bannerSectionImages')?.length || 0) >= 2
-                            ? 'opacity-50 cursor-not-allowed'
-                            : 'hover:bg-gray-100'
-                        }`}
-                      >
-                        <span className='font-semibold'>
-                          {(form.watch('bannerSectionImages')?.length || 0) >= 2
-                            ? 'Maximum 2 images reached'
-                            : '+ Add Banner Images (Select Multiple)'
-                          }
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h5 className='font-medium mb-2'>Homepage Testimonials</h5>
-                    <p className='text-sm text-gray-600 mb-3'>
-                      Add customer testimonials that appear on the homepage
-                    </p>
-                    <div className='border rounded-lg p-4'>
-                      <div className='space-y-4 max-h-96 overflow-y-auto'>
-                        {form.watch('testimonials')?.map((testimonial, index) => (
-                          <div key={index} className='border rounded-lg p-4 bg-gray-50 dark:bg-card'>
-                            <div className='flex justify-between items-start mb-3'>
-                              <div className='flex-1'>
-                                <Input
-                                  placeholder='Customer Name'
-                                  value={testimonial.name || ''}
-                                  onChange={(e) => {
-                                    const testimonials = form.getValues('testimonials') || []
-                                    testimonials[index] = { ...testimonial, name: e.target.value }
-                                    form.setValue('testimonials', testimonials)
-                                  }}
-                                  className='mb-2'
-                                />
-                                <div className='flex items-center gap-2 mb-2'>
-                                  <span className='text-sm'>Rating:</span>
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
-                                      key={star}
-                                      type='button'
-                                      onClick={() => {
-                                        const testimonials = form.getValues('testimonials') || []
-                                        testimonials[index] = { ...testimonial, rating: star }
-                                        form.setValue('testimonials', testimonials)
-                                      }}
-                                      className='text-2xl'
-                                    >
-                                      {star <= (testimonial.rating || 0) ? '⭐' : '☆'}
-                                    </button>
-                                  ))}
-                                </div>
-                                <Textarea
-                                  placeholder='Customer review text...'
-                                  value={testimonial.content || ''}
-                                  onChange={(e) => {
-                                    const testimonials = form.getValues('testimonials') || []
-                                    testimonials[index] = { ...testimonial, content: e.target.value }
-                                    form.setValue('testimonials', testimonials)
-                                  }}
-                                  rows={3}
-                                />
-                              </div>
-                              <button
-                                type='button'
-                                onClick={() => {
-                                  const testimonials = form.getValues('testimonials') || []
-                                  const newTestimonials = testimonials.filter((_, i) => i !== index)
-                                  form.setValue('testimonials', newTestimonials)
-                                }}
-                                className='ml-2 text-red-500 hover:text-red-700'
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <button
-                        type='button'
-                        onClick={() => {
-                          const testimonials = form.getValues('testimonials') || []
-                          form.setValue('testimonials', [...testimonials, { name: '', rating: 5, content: '' }])
-                        }}
-                        className='mt-4 w-full bg-gray-100 dark:bg-card border rounded-lg p-3 text-center hover:bg-gray-200 transition-colors'
-                      >
-                        + Add Testimonial
-                      </button>
-                    </div>
-                  </div>
-
-                                  </div>
-
-                <div className='flex gap-3 flex-wrap mt-4'>
-                  <ButtonLoading loading={loadingHome} type="button" text="Save Home Settings" className="cursor-pointer" onClick={saveHome} />
-                </div>
               </div>
 
               <div className='border-t pt-5'>
@@ -1147,73 +770,7 @@ const SiteConfiguration = () => {
           </Form>
         </CardContent>
       </Card>
-
-      <MediaModal
-        open={sliderMediaOpen}
-        setOpen={setSliderMediaOpen}
-        selectedMedia={sliderSelectedMedia}
-        setSelectedMedia={(m) => {
-          setSliderSelectedMedia(m)
-          if (m && m.length > 0) {
-            const currentImages = form.getValues('sliderImages') || []
-            const availableSlots = 4 - currentImages.length
-            const mediaToAdd = m.slice(0, availableSlots) // Limit to available slots
-            const newImages = [...currentImages, ...mediaToAdd.map(media => ({
-              id: media._id,
-              url: media.url,
-              secure_url: media.secure_url,
-              public_id: media.public_id,
-              alt: media.alt || '',
-              link: ''
-            }))]
-            form.setValue('sliderImages', newImages)
-            
-            // Show warning if some images were not added due to limit
-            if (m.length > availableSlots) {
-              showToast('warning', `Only ${availableSlots} image(s) were added. Maximum limit is 4 images.`)
-            }
-          }
-          setSliderMediaOpen(false)
-          setSliderSelectedMedia([])
-        }}
-        isMultiple={true}
-      />
-
-      <MediaModal
-        open={bannerSectionMediaOpen}
-        setOpen={setBannerSectionMediaOpen}
-        selectedMedia={bannerSectionSelectedMedia}
-        setSelectedMedia={(m) => {
-          setBannerSectionSelectedMedia(m)
-
-          if (m && m.length > 0) {
-            const currentImages = form.getValues('bannerSectionImages') || []
-            const availableSlots = 2 - currentImages.length
-            const mediaToAdd = m.slice(0, availableSlots)
-
-            const newImages = [...currentImages, ...mediaToAdd.map(media => ({
-              id: media._id,
-              url: media.url,
-              secure_url: media.secure_url,
-              public_id: media.public_id,
-              alt: media.alt || '',
-              link: ''
-            }))]
-
-            form.setValue('bannerSectionImages', newImages)
-
-            if (m.length > availableSlots) {
-              showToast('warning', `Only ${availableSlots} image(s) were added. Maximum limit is 2 images.`)
-            }
-          }
-
-          setBannerSectionMediaOpen(false)
-          setBannerSectionSelectedMedia([])
-        }}
-        isMultiple={true}
-      />
-
-          </div>
+    </div>
   )
 }
 

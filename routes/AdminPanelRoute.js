@@ -49,6 +49,8 @@ export const ADMIN_CONTACT_QUERY_SHOW = '/admin/contact-query'
 // Site configuration route
 export const ADMIN_SITE_CONFIGURATION = '/admin/site-configuration'
 
-// Trash route 
+// Page config routes
+export const ADMIN_PAGE_CONFIG_HOME = '/admin/page-config/home'
 
+// Trash route 
 export const ADMIN_TRASH = '/admin/trash'

@@ -125,3 +125,30 @@
 .slick-dots{
   bottom: 15px !important;
 }
+
+@keyframes brands-marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.brands-marquee {
+  overflow: hidden;
+}
+
+.brands-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: brands-marquee-scroll 25s linear infinite;
+}
+
+.brands-marquee:hover .brands-marquee-track {
+  animation-play-state: paused;
+}
+
+.brands-marquee-item {
+  flex: 0 0 auto;
+}
