@@ -51,6 +51,8 @@ export const ADMIN_SITE_CONFIGURATION = '/admin/site-configuration'
 
 // Page config routes
 export const ADMIN_PAGE_CONFIG_HOME = '/admin/page-config/home'
+export const ADMIN_PAGE_CONFIG_CONTACT_US = '/admin/page-config/contact-us'
+export const ADMIN_PAGE_CONFIG_TERMS = '/admin/page-config/terms-and-conditions'
 
 // Trash route 
 export const ADMIN_TRASH = '/admin/trash'
