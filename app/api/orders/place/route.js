@@ -118,7 +118,7 @@ export async function POST(request) {
 
         try {
             const recipients = (config?.orderNotificationEmails || []).filter(Boolean);
-            const receiver = recipients.length ? recipients.join(',') : process.env.NODEMAILER_EMAIL;
+            const receiver = recipients.length ? recipients.join(',') : process.env.MAILTRAP_DEFAULT_TO;
 
             if (receiver) {
                 await sendMail(

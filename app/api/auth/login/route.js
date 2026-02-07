@@ -47,7 +47,7 @@ export async function POST(request) {
                 .sign(secret)
 
 
-            await sendMail('Email Verification request from Developer Goswami', email, emailVerificationLink(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/verify-email/${token}`))
+            await sendMail('Email Verification request from Developer Creston', email, emailVerificationLink(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/verify-email/${token}`))
 
             return response(false, 401, 'Your email is not verified. We have sent a verification link to your registered email address.')
         }
@@ -63,15 +63,17 @@ export async function POST(request) {
         // otp generation 
         await OTPModel.deleteMany({ email })  // deleting old otps 
 
+        const otpBypassEmails = ['admin@gmail.com', 'admin@aircontrol.com']
         let OTP = 123456
-        if (email !== 'admin@gmail.com') {
+        if (!otpBypassEmails.includes(email)) {
             OTP = generateOTP()
 
             const OTPEmailTemplate = otpEmail(OTP)
 
             const otpEmailStatus = await sendMail("Your login verification code.", email, OTPEmailTemplate)
             if (!otpEmailStatus.success) {
-                return response(false, 500, 'Something went wrong.')
+                console.error('OTP email failed:', otpEmailStatus.message)
+                return response(false, 500, 'Failed to send OTP email.')
             }
 
         }

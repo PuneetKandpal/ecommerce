@@ -133,7 +133,7 @@ const runSeeder = async () => {
         console.log(`   - Media: ${await Media.countDocuments()}`);
         console.log(`   - Users: ${users.length}`);
         console.log('\n🔑 Login Credentials:');
-        console.log('   Email: admin@aircontrol.com');
+        console.log('   Email: puneetkandpal1997@gmail.com');
         console.log('   Password: admin123');
         
     } catch (error) {

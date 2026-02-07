@@ -89,15 +89,26 @@ const Footer = () => {
                     <ul>
                         <li className='mb-2 text-gray-500 flex gap-2'>
                             <IoLocationOutline size={20} />
-                            <span className='text-sm'>E-store market Lucknow, India 256320</span>
+  <div className='flex flex-col '>
+                                <span className='text-sm text'>15, Dinubhai Estate, Trikampura Patiya,</span>
+                            <span className='text-sm text-nowrap'>Gayatri Gathiya, Vatva GIDC, Ahmedabad</span>
+  <span className='text-sm text-nowrap'>Pin code – 382445</span>
+  </div>
                         </li>
                         <li className='mb-2 text-gray-500 flex gap-2'>
                             <MdOutlinePhone size={20} />
-                            <Link href="tel:+91-8569874589" className='hover:text-primary text-sm'>+91-8569874589</Link>
+                            <div className='flex flex-col text-sm'>
+                                <Link href="tel:+918080815483" className='hover:text-primary'>80808 15483</Link>
+                                <Link href="tel:+919016232325" className='hover:text-primary'>90162 32325</Link>
+                            </div>
                         </li>
                         <li className='mb-2 text-gray-500 flex gap-2'>
                             <MdOutlineMail size={20} />
-                            <Link href="mailto:support@estore.com" className='hover:text-primary text-sm'>support@estore.com</Link>
+                            <Link href="mailto:sales@aircontrolindustries.in" className='hover:text-primary text-sm'>sales@aircontrolindustries.in</Link>
+                        </li>
+                        <li className='mb-2 text-gray-500 flex gap-2'>
+                            <MdOutlineMail size={20} />
+                            <Link href="https://www.aircontrolindustries.in" target='_blank' rel='noopener noreferrer' className='hover:text-primary text-sm'>www.aircontrolindustries.in</Link>
                         </li>
 
                     </ul>

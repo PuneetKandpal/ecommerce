@@ -6,7 +6,7 @@
 - **UI**: React 19, Tailwind (via `globals.css`), Material UI, Radix UI primitives, React Hook Form.
 - **State/Async**: Redux Toolkit + redux-persist (`store/`), TanStack React Query for data tables, custom hooks in `hooks/`.
 - **Database**: MongoDB accessed through Mongoose models (`models/`).
-- **APIs & Services**: Razorpay for payments, Cloudinary for media, Nodemailer for transactional emails.
+- **APIs & Services**: Razorpay for payments, Cloudinary for media, Mailtrap for transactional emails.
 - **Tooling**: ESLint 9, Turbopack dev server, PostCSS/Tailwind 4 config.
 
 ## 2. Repository Layout & Responsibilities
@@ -38,7 +38,7 @@
    - Checkout integrates Razorpay: client obtains order ID via `/api/payment/get-order-id`, verifies payment server-side in `/api/payment/save-order`, and sends transactional emails.
 
 4. **Emails & Notifications**
-   - `lib/sendMail.js` configures Nodemailer via environment credentials.
+   - `lib/sendMail.js` sends transactional emails via Mailtrap SDK (token-based).
    - Email templates in `email/` are imported by auth/payment flows to deliver OTPs, verification links, and receipts.
 
 ## 4. Environment Variables
@@ -47,10 +47,11 @@
 | --- | --- | --- | --- |
 | `MONGODB_URI` | ✅ | Server | Connection string used by `lib/databaseConnection.js` to initialize Mongoose. |
 | `SECRET_KEY` | ✅ | Server | Symmetric signing key for JWTs in auth routes and middleware (`app/api/auth/*`, `middleware.js`, `lib/authentication.js`). |
-| `NODEMAILER_HOST` | ✅ | Server | SMTP host for Nodemailer transporter in `lib/sendMail.js`. |
-| `NODEMAILER_PORT` | ✅ | Server | SMTP port for Nodemailer transporter. |
-| `NODEMAILER_EMAIL` | ✅ | Server | Auth username & default “from” address for emails. |
-| `NODEMAILER_PASSWORD` | ✅ | Server | SMTP password used by Nodemailer. |
+| `MAILTRAP_TOKEN` | ✅ | Server | Mailtrap API token used by `MailtrapClient` in `lib/sendMail.js`. |
+| `MAILTRAP_SENDER_EMAIL` | ✅ | Server | Default “from” address for outgoing emails. |
+| `MAILTRAP_SENDER_NAME` | ➖ | Server | Optional “from” display name. |
+| `MAILTRAP_DEFAULT_TO` | ✅ | Server | Default admin recipient (used as fallback for order/contact notifications). |
+| `MAILTRAP_CATEGORY` | ➖ | Server | Optional category label for Mailtrap messages. |
 | `NEXT_PUBLIC_BASE_URL` | ✅ | Client & Server | Absolute site origin used to construct links in emails and admin data-fetch URLs (e.g., verification links, datatable pagination). |
 | `NEXT_PUBLIC_API_BASE_URL` | ✅ | Client | Base URL for client-side data fetching in storefront pages/components (`product`, `order-details`, `FeaturedProduct`). |
 | `NODE_ENV` | ➖ | Both | Standard environment flag. Controls error verbosity in `lib/helperFunction.js` and cookie security flags. |

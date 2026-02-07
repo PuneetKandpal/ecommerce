@@ -15,6 +15,17 @@ const breadcrumb = {
   links: [{ label: 'Contact Us' }],
 }
 
+const fallbackContactDetails = {
+  phones: ['80808 15483', '90162 32325'],
+  email: 'sales@aircontrolindustries.in',
+  website: 'www.aircontrolindustries.in',
+  addressLines: [
+    '15, Dinubhai Estate, Trikampura Patiya',
+    'Gayatri Gathiya, Vatva GIDC',
+    'Ahmedabad – 382445',
+  ],
+}
+
 const ContactUsPage = () => {
   const [loading, setLoading] = useState(false)
   const [contactForm, setContactForm] = useState({ email: '', phone: '', query: '' })
@@ -127,6 +138,49 @@ const ContactUsPage = () => {
               {!contactInfo ? (
                 <p className='text-sm'>Configure contact info from Admin → Page Config → Contact Us.</p>
               ) : null}
+
+              <div className='mt-6 border-t pt-4 space-y-3'>
+                <p className='font-semibold text-gray-900'>Contact Air Control Industries</p>
+                <div>
+                  <p className='text-sm font-medium text-gray-800'>Phone</p>
+                  <div className='text-sm flex flex-col'>
+                    {fallbackContactDetails.phones.map((phone) => (
+                      <a key={phone} href={`tel:${phone.replace(/\s+/g, '')}`} className='hover:text-primary'>
+                        {phone}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className='text-sm font-medium text-gray-800'>Email</p>
+                  <a
+                    href={`mailto:${fallbackContactDetails.email}`}
+                    className='text-sm hover:text-primary'
+                  >
+                    {fallbackContactDetails.email}
+                  </a>
+                </div>
+
+                <div>
+                  <p className='text-sm font-medium text-gray-800'>Website</p>
+                  <a
+                    href={`https://${fallbackContactDetails.website}`}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='text-sm hover:text-primary'
+                  >
+                    {fallbackContactDetails.website}
+                  </a>
+                </div>
+
+                <div>
+                  <p className='text-sm font-medium text-gray-800'>Address</p>
+                  <p className='text-sm whitespace-pre-line'>
+                    {fallbackContactDetails.addressLines.join('\n')}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 

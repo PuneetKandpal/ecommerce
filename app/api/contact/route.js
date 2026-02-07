@@ -62,8 +62,8 @@ export async function POST(request) {
         await doc.save()
 
         const config = await getMergedSiteConfig({ includeLegacyFallback: true })
-        const isMailConfigured = !!(process.env.NODEMAILER_HOST && process.env.NODEMAILER_EMAIL && process.env.NODEMAILER_PASSWORD)
-        const adminRecipients = (config?.contactNotificationEmails?.length ? config.contactNotificationEmails : [process.env.NODEMAILER_EMAIL])
+        const isMailConfigured = !!(process.env.MAILTRAP_TOKEN && process.env.MAILTRAP_SENDER_EMAIL)
+        const adminRecipients = (config?.contactNotificationEmails?.length ? config.contactNotificationEmails : [process.env.MAILTRAP_DEFAULT_TO])
             .filter(Boolean)
             .join(',')
 
