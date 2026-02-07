@@ -1,20 +1,15 @@
-import { connectDB } from "@/lib/databaseConnection";
 import { catchError, response } from "@/lib/helperFunction";
-
-import CategoryModel from "@/models/Category.model";
+import { getCategories } from "@/lib/categoryService";
 
 export async function GET() {
     try {
+        const categories = await getCategories()
 
-        await connectDB()
-
-        const getCategory = await CategoryModel.find({ deletedAt: null }).populate('image').lean()
-
-        if (!getCategory) {
+        if (!categories) {
             return response(false, 404, 'Category not found.')
         }
 
-        return response(true, 200, 'Category found.', getCategory)
+        return response(true, 200, 'Category found.', categories)
 
     } catch (error) {
         return catchError(error)

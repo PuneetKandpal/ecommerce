@@ -10,6 +10,8 @@ import Testimonial from '@/components/Application/Website/Testimonial'
 import BrandsMarquee from '@/components/Application/Website/BrandsMarquee'
 import imgPlaceholder from '@/public/assets/images/img-placeholder.webp'
 import { WEBSITE_SHOP } from '@/routes/WebsiteRoute'
+import { getCategories } from '@/lib/categoryService'
+import { getSiteConfigGroup } from '@/lib/getSiteConfig'
 
 import { GiReturnArrow } from "react-icons/gi";
 import { FaShippingFast } from "react-icons/fa";
@@ -21,43 +23,18 @@ export const dynamic = 'force-dynamic'
 const Home = async () => {
     let categoryData = null
     let homeConfig = null
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
 
     try {
-        const apiUrl = `${baseUrl}/api/category/get-category`
-        const res = await fetch(apiUrl, {
-            cache: 'no-store',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-
-        if (!res.ok) {
-            console.error('Category fetch failed:', res.status, res.statusText)
-            categoryData = null
-        } else {
-            categoryData = await res.json()
-        }
+        const categories = await getCategories()
+        categoryData = { success: true, data: categories }
     } catch (error) {
         console.error('Category fetch error:', error.message)
         categoryData = null
     }
 
     try {
-        const homeConfigUrl = `${baseUrl}/api/site-config/home`
-        const res = await fetch(homeConfigUrl, {
-            cache: 'no-store',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-
-        if (!res.ok) {
-            console.error('Home config fetch failed:', res.status, res.statusText)
-            homeConfig = null
-        } else {
-            homeConfig = await res.json()
-        }
+        const config = await getSiteConfigGroup('home')
+        homeConfig = { success: true, data: config }
     } catch (error) {
         console.error('Home config fetch error:', error.message)
         homeConfig = null

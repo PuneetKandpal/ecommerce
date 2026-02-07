@@ -1,14 +1,14 @@
-import axios from 'axios';
 import Link from 'next/link'
 import React from 'react'
 import { IoIosArrowRoundForward } from "react-icons/io";
 import ProductBox from './ProductBox';
+import { getFeaturedProducts } from '@/lib/productService';
 
 const FeaturedProduct = async () => {
     let productData = null
     try {
-        const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product/get-featured-product`)
-        productData = data
+        const products = await getFeaturedProducts(8);
+        productData = { success: true, data: products };
     } catch (error) {
         console.log(error)
     }
