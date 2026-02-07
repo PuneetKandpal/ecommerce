@@ -2,7 +2,7 @@
 import { USER_DASHBOARD, WEBSITE_HOME, WEBSITE_LOGIN, WEBSITE_SHOP } from '@/routes/WebsiteRoute'
 import Image from 'next/image'
 import Link from 'next/link'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import logo from '@/public/assets/images/logo-black.png'
 import { IoIosSearch } from "react-icons/io";
 import Cart from './Cart'
@@ -13,11 +13,23 @@ import userIcon from '@/public/assets/images/user.png'
 import { IoMdClose } from "react-icons/io";
 import { HiMiniBars3 } from "react-icons/hi2";
 import Search from './Search'
+import { usePathname } from 'next/navigation'
 
 const Header = () => {
     const auth = useSelector(store => store.authStore.auth)
     const [isMobileMenu, setIsMobileMenu] = useState(false)
     const [showSearch, setShowSearch] = useState(false)
+    const pathname = usePathname()
+
+    const navLinks = useMemo(() => ([
+        { label: 'Home', href: WEBSITE_HOME, match: (path) => path === '/' },
+        { label: 'Our Journey', href: '/about-us', match: (path) => path.startsWith('/about') },
+        { label: 'Shop', href: WEBSITE_SHOP, match: (path) => path.startsWith('/shop') || path.startsWith('/product') },
+        { label: 'Contact Us', href: '/contact-us', match: (path) => path.startsWith('/contact') },
+    ]), [])
+
+    const isActive = (link) => (link.match ? link.match(pathname || '') : pathname === link.href)
+
     return (
         <div className='bg-white border-b lg:px-32 px-4'>
             <div className='flex justify-between items-center lg:py-5 py-3'>
@@ -53,26 +65,17 @@ const Header = () => {
 
 
                         <ul className='lg:flex justify-between items-center gap-10 px-3 '>
-                            <li className='text-gray-600 hover:text-primary hover:font-semibold'>
-                                <Link href={WEBSITE_HOME} className='block py-2'>
-                                    Home
-                                </Link>
-                            </li>
-                            <li className='text-gray-600 hover:text-primary hover:font-semibold'>
-                                <Link href="/about-us" className='block py-2'>
-                                    Our Journey
-                                </Link>
-                            </li>
-                            <li className='text-gray-600 hover:text-primary hover:font-semibold'>
-                                <Link href={WEBSITE_SHOP} className='block py-2'>
-                                    Shop
-                                </Link>
-                            </li>
-                            <li className='text-gray-600 hover:text-primary hover:font-semibold'>
-                                <Link href="/contact-us" className='block py-2'>
-                                    Contact Us
-                                </Link>
-                            </li>
+                            {navLinks.map((link) => (
+                                <li
+                                    key={link.href}
+                                    className={`text-gray-600 hover:text-primary hover:font-semibold transition-colors ${isActive(link) ? 'text-primary font-semibold relative' : ''}`}
+                                >
+                                    <Link href={link.href} className='block py-2'>
+                                        {link.label}
+                                    </Link>
+                                    {isActive(link) ? <span className='absolute left-0 right-0 -bottom-1 h-0.5 bg-primary hidden lg:block' /> : null}
+                                </li>
+                            ))}
                         </ul>
                     </nav>
 

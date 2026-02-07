@@ -8,6 +8,7 @@ import { seedCategories } from './seeds/categories.seed.js';
 import { seedUsers } from './seeds/users.seed.js';
 import { seedProducts } from './seeds/products.seed.js';
 import { seedProductVariants } from './seeds/variants.seed.js';
+import { seedContactUs } from './seeds/contactUs.seed.js';
 
 // Setup ES module path
 const __filename = fileURLToPath(import.meta.url);
@@ -79,7 +80,14 @@ const userSchema = new mongoose.Schema({
     deletedAt: { type: Date, default: null, index: true }
 }, { timestamps: true });
 
+// SiteConfig schema for contact us
+const siteConfigSchema = new mongoose.Schema({
+    key: { type: String, index: true },
+    data: { type: mongoose.Schema.Types.Mixed, default: null },
+}, { timestamps: true });
+
 // Create models
+const SiteConfig = mongoose.models.SiteConfig || mongoose.model('SiteConfig', siteConfigSchema, 'site_configs');
 const Category = mongoose.models.Category || mongoose.model('Category', categorySchema, 'categories');
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema, 'products');
 const ProductVariant = mongoose.models.ProductVariant || mongoose.model('ProductVariant', productVariantSchema, 'productvariants');
@@ -115,7 +123,8 @@ const runSeeder = async () => {
             ProductVariant.deleteMany({}),
             Product.deleteMany({}),
             Media.deleteMany({}),
-            Category.deleteMany({})
+            Category.deleteMany({}),
+            SiteConfig.deleteMany({ key: 'contact_us' })
         ]);
         console.log('✅ Cleared all data\n');
         
@@ -124,6 +133,7 @@ const runSeeder = async () => {
         const users = await seedUsers(User);
         const products = await seedProducts(Product, Media, categories);
         const variants = await seedProductVariants(ProductVariant, Media, products);
+        const contactUs = await seedContactUs(SiteConfig);
         
         console.log('🎉 Database seeding completed!\n');
         console.log('📊 Summary:');
@@ -132,6 +142,7 @@ const runSeeder = async () => {
         console.log(`   - Variants: ${variants.length}`);
         console.log(`   - Media: ${await Media.countDocuments()}`);
         console.log(`   - Users: ${users.length}`);
+        console.log(`   - Contact Us: configured`);
         console.log('\n🔑 Login Credentials:');
         console.log('   Email: puneetkandpal1997@gmail.com');
         console.log('   Password: admin123');

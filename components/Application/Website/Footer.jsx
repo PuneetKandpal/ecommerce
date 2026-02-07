@@ -1,7 +1,6 @@
 import Image from 'next/image'
-import React from 'react'
-import logo from '@/public/assets/images/logo-black.png'
 import Link from 'next/link'
+import logo from '@/public/assets/images/logo-black.png'
 import { IoLocationOutline } from "react-icons/io5";
 import { MdOutlinePhone } from "react-icons/md";
 import { MdOutlineMail } from "react-icons/md";
@@ -12,7 +11,19 @@ import { TiSocialFacebookCircular } from "react-icons/ti";
 import { FiTwitter } from "react-icons/fi";
 
 import { USER_DASHBOARD, WEBSITE_HOME, WEBSITE_LOGIN, WEBSITE_REGISTER, WEBSITE_SHOP } from '@/routes/WebsiteRoute'
-const Footer = () => {
+import { getSiteConfigGroup } from '@/lib/getSiteConfig'
+import { formatWebsiteUrl, normalizeContactInfo, splitPhones } from '@/lib/contactInfo'
+
+const Footer = async () => {
+    const config = await getSiteConfigGroup('contact_us')
+    const { info } = normalizeContactInfo(config?.contactUs || {})
+    const phoneNumbers = splitPhones(info.phone)
+    const addressLines = [
+        [info.addressLine1, info.addressLine2].filter(Boolean).join(', '),
+        [info.city, info.state].filter(Boolean).join(', '),
+        [info.country, info.pincode].filter(Boolean).join(' - ')
+    ].filter((line) => line && line.trim().length)
+
     return (
         <footer className='bg-gray-50 border-t'>
             <div className='grid lg:grid-cols-5 md:grid-cols-2 grid-cols-1 gap-10 py-10 lg:px-32 px-4'>
@@ -87,29 +98,43 @@ const Footer = () => {
                 <div>
                     <h4 className='text-xl font-bold uppercase mb-5'>Contact Us </h4>
                     <ul>
-                        <li className='mb-2 text-gray-500 flex gap-2'>
-                            <IoLocationOutline size={20} />
-  <div className='flex flex-col '>
-                                <span className='text-sm text'>15, Dinubhai Estate, Trikampura Patiya,</span>
-                            <span className='text-sm text-nowrap'>Gayatri Gathiya, Vatva GIDC, Ahmedabad</span>
-  <span className='text-sm text-nowrap'>Pin code – 382445</span>
-  </div>
-                        </li>
-                        <li className='mb-2 text-gray-500 flex gap-2'>
-                            <MdOutlinePhone size={20} />
-                            <div className='flex flex-col text-sm'>
-                                <Link href="tel:+918080815483" className='hover:text-primary'>80808 15483</Link>
-                                <Link href="tel:+919016232325" className='hover:text-primary'>90162 32325</Link>
-                            </div>
-                        </li>
-                        <li className='mb-2 text-gray-500 flex gap-2'>
-                            <MdOutlineMail size={20} />
-                            <Link href="mailto:sales@aircontrolindustries.in" className='hover:text-primary text-sm'>sales@aircontrolindustries.in</Link>
-                        </li>
-                        <li className='mb-2 text-gray-500 flex gap-2'>
-                            <MdOutlineMail size={20} />
-                            <Link href="https://www.aircontrolindustries.in" target='_blank' rel='noopener noreferrer' className='hover:text-primary text-sm'>www.aircontrolindustries.in</Link>
-                        </li>
+                        {addressLines.length ? (
+                            <li className='mb-2 text-gray-500 flex gap-2'>
+                                <IoLocationOutline size={20} />
+                                <div className='flex flex-col'>
+                                    {addressLines.map((line) => (
+                                        <span key={line} className='text-sm'>{line}</span>
+                                    ))}
+                                </div>
+                            </li>
+                        ) : null}
+
+                        {phoneNumbers.length ? (
+                            <li className='mb-2 text-gray-500 flex gap-2'>
+                                <MdOutlinePhone size={20} />
+                                <div className='flex flex-col text-sm'>
+                                    {phoneNumbers.map((phone) => (
+                                        <a key={phone} href={`tel:${phone.replace(/\s+/g, '')}`} className='hover:text-primary'>
+                                            {phone}
+                                        </a>
+                                    ))}
+                                </div>
+                            </li>
+                        ) : null}
+
+                        {info.email ? (
+                            <li className='mb-2 text-gray-500 flex gap-2'>
+                                <MdOutlineMail size={20} />
+                                <a href={`mailto:${info.email}`} className='hover:text-primary text-sm'>{info.email}</a>
+                            </li>
+                        ) : null}
+
+                        {info.website ? (
+                            <li className='mb-2 text-gray-500 flex gap-2'>
+                                <MdOutlineMail size={20} />
+                                <a href={formatWebsiteUrl(info.website)} target='_blank' rel='noopener noreferrer' className='hover:text-primary text-sm'>{info.website}</a>
+                            </li>
+                        ) : null}
 
                     </ul>
 

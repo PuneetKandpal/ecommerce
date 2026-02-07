@@ -17,6 +17,7 @@ const schema = z.object({
       country: z.string().optional().default(''),
       phone: z.string().optional().default(''),
       email: z.string().optional().default(''),
+      website: z.string().optional().default(''),
       mapUrl: z.string().optional().default(''),
       workingHours: z.string().optional().default(''),
     })

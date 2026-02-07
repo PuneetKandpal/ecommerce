@@ -4,6 +4,7 @@ import WebsiteBreadcrumb from '@/components/Application/Website/WebsiteBreadcrum
 import ButtonLoading from '@/components/Application/ButtonLoading'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { formatWebsiteUrl, normalizeContactInfo, splitPhones, FALLBACK_CONTACT_INFO } from '@/lib/contactInfo'
 import { showToast } from '@/lib/showToast'
 import axios from 'axios'
 import React, { useEffect, useState } from 'react'
@@ -15,29 +16,22 @@ const breadcrumb = {
   links: [{ label: 'Contact Us' }],
 }
 
-const fallbackContactDetails = {
-  phones: ['80808 15483', '90162 32325'],
-  email: 'sales@aircontrolindustries.in',
-  website: 'www.aircontrolindustries.in',
-  addressLines: [
-    '15, Dinubhai Estate, Trikampura Patiya',
-    'Gayatri Gathiya, Vatva GIDC',
-    'Ahmedabad – 382445',
-  ],
-}
-
 const ContactUsPage = () => {
   const [loading, setLoading] = useState(false)
   const [contactForm, setContactForm] = useState({ email: '', phone: '', query: '' })
-  const [contactInfo, setContactInfo] = useState(null)
+  const [contactInfo, setContactInfo] = useState(FALLBACK_CONTACT_INFO)
+  const [isConfigured, setIsConfigured] = useState(false)
 
   useEffect(() => {
     const load = async () => {
       try {
         const { data } = await axios.get('/api/site-config/contact-us')
-        setContactInfo(data?.data?.contactUs || null)
+        const normalized = normalizeContactInfo(data?.data?.contactUs || {})
+        setContactInfo(normalized.info)
+        setIsConfigured(normalized.isConfigured)
       } catch (e) {
-        setContactInfo(null)
+        setContactInfo(FALLBACK_CONTACT_INFO)
+        setIsConfigured(false)
       }
     }
 
@@ -96,12 +90,16 @@ const ContactUsPage = () => {
                 </div>
               ) : null}
 
-              {contactInfo?.phone ? (
+              {splitPhones(contactInfo?.phone).length ? (
                 <div>
                   <p className='font-medium text-gray-900'>Phone</p>
-                  <a className='text-sm hover:text-primary' href={`tel:${contactInfo.phone}`}>
-                    {contactInfo.phone}
-                  </a>
+                  <div className='text-sm flex flex-col'>
+                    {splitPhones(contactInfo.phone).map((phone) => (
+                      <a key={phone} className='hover:text-primary' href={`tel:${phone.replace(/\s+/g, '')}`}>
+                        {phone}
+                      </a>
+                    ))}
+                  </div>
                 </div>
               ) : null}
 
@@ -110,6 +108,20 @@ const ContactUsPage = () => {
                   <p className='font-medium text-gray-900'>Email</p>
                   <a className='text-sm hover:text-primary' href={`mailto:${contactInfo.email}`}>
                     {contactInfo.email}
+                  </a>
+                </div>
+              ) : null}
+
+              {contactInfo?.website ? (
+                <div>
+                  <p className='font-medium text-gray-900'>Website</p>
+                  <a
+                    className='text-sm hover:text-primary'
+                    href={formatWebsiteUrl(contactInfo.website)}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                  >
+                    {contactInfo.website}
                   </a>
                 </div>
               ) : null}
@@ -135,52 +147,9 @@ const ContactUsPage = () => {
                 </div>
               ) : null}
 
-              {!contactInfo ? (
-                <p className='text-sm'>Configure contact info from Admin → Page Config → Contact Us.</p>
+              {!isConfigured ? (
+                <p className='text-xs text-gray-500 pt-2 border-t'>Using default contact details. Configure from Admin → Page Config → Contact Us.</p>
               ) : null}
-
-              <div className='mt-6 border-t pt-4 space-y-3'>
-                <p className='font-semibold text-gray-900'>Contact Air Control Industries</p>
-                <div>
-                  <p className='text-sm font-medium text-gray-800'>Phone</p>
-                  <div className='text-sm flex flex-col'>
-                    {fallbackContactDetails.phones.map((phone) => (
-                      <a key={phone} href={`tel:${phone.replace(/\s+/g, '')}`} className='hover:text-primary'>
-                        {phone}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className='text-sm font-medium text-gray-800'>Email</p>
-                  <a
-                    href={`mailto:${fallbackContactDetails.email}`}
-                    className='text-sm hover:text-primary'
-                  >
-                    {fallbackContactDetails.email}
-                  </a>
-                </div>
-
-                <div>
-                  <p className='text-sm font-medium text-gray-800'>Website</p>
-                  <a
-                    href={`https://${fallbackContactDetails.website}`}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='text-sm hover:text-primary'
-                  >
-                    {fallbackContactDetails.website}
-                  </a>
-                </div>
-
-                <div>
-                  <p className='text-sm font-medium text-gray-800'>Address</p>
-                  <p className='text-sm whitespace-pre-line'>
-                    {fallbackContactDetails.addressLines.join('\n')}
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
 
