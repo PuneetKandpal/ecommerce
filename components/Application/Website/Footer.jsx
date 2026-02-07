@@ -37,7 +37,7 @@ const Footer = async () => {
                         className='w-36 mb-2'
                     />
                     <p className='text-gray-500 text-sm'>
-                        E-store is your trusted destination for quality and convenience. From fashion to essentials, we bring everything you need right to your doorstep. Shop smart, live better — only at E-store.
+                        Air Control Industries, established in 2016 in Ahmedabad, Gujarat, is a leading supplier of pneumatic products, industrial valves, automation products, and hydraulic hoses. We deliver quality, reliability, and value with strong technical support and dependable service.
                     </p>
                 </div>
 
@@ -165,7 +165,7 @@ const Footer = async () => {
 
 
             <div className='py-5 bg-gray-100' >
-                <p className='text-center'>© 2024 Estore. All Rights Reserved.</p>
+                <p className='text-center'> 2024 Air Control Industries. All Rights Reserved.</p>
             </div>
 
         </footer>
