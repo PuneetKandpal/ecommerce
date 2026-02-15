@@ -1,32 +1,10 @@
 'use client'
 
 import React from 'react'
-import Slider from 'react-slick'
-import { FaQuoteLeft, FaQuoteRight } from 'react-icons/fa'
-import { AiFillStar } from 'react-icons/ai'
+import { motion } from 'framer-motion'
+import { FaQuoteLeft } from 'react-icons/fa'
 
 const Testimonial = ({ testimonials = [] }) => {
-
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    autoplay: true,
-    autoplaySpeed: 5000,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    arrows: false,
-    responsive: [
-      {
-        breakpoint: 768,
-        settings: {
-          dots: false,
-          arrows: false,
-        },
-      },
-    ],
-  }
-
   const defaultTestimonials = [
     {
       name: 'John Doe',
@@ -52,48 +30,62 @@ const Testimonial = ({ testimonials = [] }) => {
   ]
 
   const testimonialsToShow = testimonials.length > 0 ? testimonials : defaultTestimonials
+  const loop = testimonialsToShow.length ? [...testimonialsToShow, ...testimonialsToShow] : []
+
+  const getInitials = (name) => {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean)
+    const first = parts[0]?.[0] || 'U'
+    const second = parts[1]?.[0] || ''
+    return `${first}${second}`.toUpperCase()
+  }
 
   return (
-    <section className='py-10 lg:px-32 px-4'>
-      <div className='text-center mb-10'>
-        <h2 className='text-3xl font-bold mb-2'>What Our Customers Say</h2>
-        <p className='text-gray-600'>Don't just take our word for it</p>
-      </div>
+    <section className='py-14 bg-slate-50 overflow-hidden'>
+      <div className='lg:px-32 px-4'>
+        <div className='mb-10'>
+          <p className='text-xs font-bold tracking-[0.3em] text-gray-500'>TESTIMONIALS</p>
+          <h2 className='mt-3 text-3xl lg:text-4xl font-black text-gray-900'>What customers say</h2>
+        </div>
 
-      <div className='max-w-4xl mx-auto'>
-        <Slider {...settings}>
-          {testimonialsToShow.map((testimonial, index) => (
-            <div key={index} className='px-4'>
-              <div className='bg-gray-50 dark:bg-gray-800 rounded-lg p-8 text-center'>
-                <div className='flex justify-center mb-4'>
-                  <FaQuoteLeft className='text-3xl text-gray-300' />
-                </div>
-                <p className='text-gray-700 dark:text-gray-300 mb-6 italic'>{testimonial.content || testimonial.review}</p>
-                <div className='flex justify-center mb-4'>
-                  {[...Array(5)].map((_, i) => (
-                    <AiFillStar
-                      key={i}
-                      className={i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}
-                      size={20}
-                    />
-                  ))}
-                </div>
-                <div className='flex justify-center items-center gap-2'>
-                  <FaQuoteRight className='text-xl text-gray-300' />
-                  <div>
-                    <h4 className='font-semibold text-lg'>{testimonial.name}</h4>
-                    {testimonial.designation && (
-                      <p className='text-sm text-gray-600'>
-                        {testimonial.designation}
-                        {testimonial.company && ` at ${testimonial.company}`}
-                      </p>
-                    )}
+        {loop.length ? (
+          <div className='relative'>
+            <div className='absolute left-0 top-0 bottom-0 w-16 bg-linear-to-r from-slate-50 to-transparent z-10' />
+            <div className='absolute right-0 top-0 bottom-0 w-16 bg-linear-to-l from-slate-50 to-transparent z-10' />
+
+            <motion.div className='overflow-hidden'>
+              <motion.div
+                className='flex gap-6 w-max'
+                animate={{ x: ['0%', '-50%'] }}
+                transition={{ duration: 34, ease: 'linear', repeat: Infinity }}
+              >
+                {loop.map((t, index) => (
+                  <div
+                    key={`${t?.name || 'testimonial'}-${index}`}
+                    className='w-[320px] shrink-0 rounded-2xl border border-gray-200 bg-white p-6 hover:shadow-lg hover:shadow-black/5 transition-shadow flex flex-col min-h-[220px]'
+                  >
+                    <FaQuoteLeft className='text-primary' size={18} />
+                    <p className='mt-4 text-sm leading-6 text-gray-700 line-clamp-6 flex-1'>
+                      {t?.content || t?.review}
+                    </p>
+
+                    <div className='mt-6 flex items-center gap-3'>
+                      <div className='w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-bold text-gray-700'>
+                        {getInitials(t?.name)}
+                      </div>
+                      <div>
+                        <div className='text-sm font-bold text-gray-900'>{t?.name}</div>
+                        <div className='text-xs text-gray-500'>
+                          {t?.designation ? t.designation : 'Customer'}
+                          {t?.company ? ` • ${t.company}` : ''}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </Slider>
+                ))}
+              </motion.div>
+            </motion.div>
+          </div>
+        ) : null}
       </div>
     </section>
   )

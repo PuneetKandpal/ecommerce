@@ -17,7 +17,8 @@ import { WEBSITE_CART, WEBSITE_CHECKOUT } from "@/routes/WebsiteRoute";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { showToast } from "@/lib/showToast";
-const Cart = () => {
+
+const Cart = ({ iconSize = 25, iconClassName = "text-gray-500 hover:text-primary", badgeClassName = "absolute bg-red-500 text-white text-xs rounded-full w-4 h-4 flex justify-center items-center -right-2 -top-1" }) => {
     const [open, setOpen] = useState(false)
     const [subtotal, setSubTotal] = useState(0)
     const [discount, setDiscount] = useState(0)
@@ -46,8 +47,8 @@ const Cart = () => {
     return (
         <Sheet open={open} onOpenChange={setOpen} >
             <SheetTrigger className="relative">
-                <BsCart2 size={25} className="text-gray-500 hover:text-primary" />
-                <span className="absolute bg-red-500 text-white text-xs rounded-full w-4 h-4 flex justify-center items-center -right-2 -top-1">{cart.count}</span>
+                <BsCart2 size={iconSize} className={iconClassName} />
+                <span className={badgeClassName}>{cart.count}</span>
             </SheetTrigger>
             <SheetContent className="sm:max-w-[450px] w-full">
                 <SheetHeader className='py-2'>

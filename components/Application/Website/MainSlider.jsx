@@ -15,8 +15,12 @@ import { LuChevronLeft } from "react-icons/lu";
 const ArrowNext = (props) => {
     const { onClick } = props
     return (
-        <button onClick={onClick} type='button' className='w-14 h-14 flex justify-center items-center rounded-full absolute z-10 top-1/2 -translate-y-1/2 bg-white right-10' >
-            <LuChevronRight size={25} className='text-gray-600' />
+        <button
+            onClick={onClick}
+            type='button'
+            className='w-16 h-16 flex justify-center items-center absolute z-30 bottom-6 right-6 bg-primary border border-primary shadow-lg'
+        >
+            <LuChevronRight size={22} className='text-black' />
         </button>
     )
 }
@@ -24,8 +28,12 @@ const ArrowNext = (props) => {
 const ArrowPrev = (props) => {
     const { onClick } = props
     return (
-        <button onClick={onClick} type='button' className='w-14 h-14 flex justify-center items-center rounded-full absolute z-10 top-1/2 -translate-y-1/2 bg-white left-10' >
-            <LuChevronLeft size={25} className='text-gray-600' />
+        <button
+            onClick={onClick}
+            type='button'
+            className='w-16 h-16 flex justify-center items-center absolute z-30 bottom-6 right-6 -translate-x-full transform bg-white border border-gray-200 shadow-lg'
+        >
+            <LuChevronLeft size={22} className='text-gray-800' />
         </button>
     )
 }
@@ -61,38 +69,38 @@ const MainSlider = ({ images = [] }) => {
     ]
 
     return (
-        <div>
+        <div className="h-[calc(100vh-100px)] relative">
             <Slider {...settings}>
                 {imagesToShow.map((image, index) => (
-                    <div key={index} className="outline-none">
+                    <div key={index} className="outline-none h-[calc(100vh-100px)]">
                         {image.secure_url || image.url ? (
-                            <img 
-                                src={image.secure_url || image.url} 
-                                alt={image.alt || `Slider ${index + 1}`} 
-                                className="w-full h-auto object-cover"
-                                style={{ maxHeight: '500px' }}
+                            <img
+                                src={image.secure_url || image.url}
+                                alt={image.alt || `Slider ${index + 1}`}
+                                className="w-full h-full object-cover"
                             />
                         ) : image.isStatic ? (
-                            <div style={{ position: 'relative', width: '100%', height: '500px' }}>
-                                <Image 
-                                    src={image.src} 
+                            <div className="relative w-full h-full">
+                                <Image
+                                    src={image.src}
                                     fill
                                     sizes="100vw"
-                                    alt={image.alt} 
+                                    alt={image.alt}
                                     className="object-cover"
                                     priority={index === 0}
                                 />
                             </div>
                         ) : (
-                            <Image 
-                                src={image.src} 
-                                width={image.width || 1920}
-                                height={image.height || 1080}
-                                alt={image.alt || `Slider ${index + 1}`} 
-                                className="w-full h-auto object-cover"
-                                style={{ maxHeight: '500px' }}
-                                priority={index === 0}
-                            />
+                            <div className="relative w-full h-full">
+                                <Image
+                                    src={image.src}
+                                    fill
+                                    sizes="100vw"
+                                    alt={image.alt || `Slider ${index + 1}`}
+                                    className="object-cover"
+                                    priority={index === 0}
+                                />
+                            </div>
                         )}
                     </div>
                 ))}

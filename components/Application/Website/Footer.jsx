@@ -1,173 +1,126 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import logo from '@/public/assets/images/logo-black.png'
-import { IoLocationOutline } from "react-icons/io5";
-import { MdOutlinePhone } from "react-icons/md";
-import { MdOutlineMail } from "react-icons/md";
-import { AiOutlineYoutube } from "react-icons/ai";
-import { FaInstagram } from "react-icons/fa";
-import { FaWhatsapp } from "react-icons/fa";
-import { TiSocialFacebookCircular } from "react-icons/ti";
-import { FiTwitter } from "react-icons/fi";
+import { WEBSITE_HOME, WEBSITE_SHOP } from '@/routes/WebsiteRoute'
+import { FALLBACK_CONTACT_INFO, formatWebsiteUrl, splitPhones } from '@/lib/contactInfo'
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaXTwitter, FaYoutube } from 'react-icons/fa6'
+import { MdEmail, MdLocationOn, MdPhone } from 'react-icons/md'
+import { IoMdGlobe } from 'react-icons/io'
 
-import { USER_DASHBOARD, WEBSITE_HOME, WEBSITE_LOGIN, WEBSITE_REGISTER, WEBSITE_SHOP } from '@/routes/WebsiteRoute'
-import { getSiteConfigGroup } from '@/lib/getSiteConfig'
-import { formatWebsiteUrl, normalizeContactInfo, splitPhones } from '@/lib/contactInfo'
+const linkCols = [
+    {
+        title: 'Company',
+        links: [
+            { label: 'Our Journey', href: '/about-us' },
+            { label: 'Shop', href: WEBSITE_SHOP },
+        ],
+    },
+    {
+        title: 'Useful Links',
+        links: [
+            { label: 'Home', href: WEBSITE_HOME },
+            { label: 'Shop', href: WEBSITE_SHOP },
+            { label: 'About', href: '/about-us' },
+            { label: 'Register', href: '/register' },
+            { label: 'Login', href: '/login' },
+        ],
+    },
+    {
+        title: 'Help Center',
+        links: [
+            { label: 'Register', href: '/register' },
+            { label: 'Login', href: '/login' },
+            { label: 'My Account', href: '/user/dashboard' },
+            { label: 'Privacy Policy', href: '/privacy-policy' },
+            { label: 'Terms & Conditions', href: '/terms-conditions' },
+        ],
+    },
+]
 
-const Footer = async () => {
-    const config = await getSiteConfigGroup('contact_us')
-    const { info } = normalizeContactInfo(config?.contactUs || {})
-    const phoneNumbers = splitPhones(info.phone)
-    const addressLines = [
-        [info.addressLine1, info.addressLine2].filter(Boolean).join(', '),
-        [info.city, info.state].filter(Boolean).join(', '),
-        [info.country, info.pincode].filter(Boolean).join(' - ')
-    ].filter((line) => line && line.trim().length)
+const Footer = () => {
+    const info = FALLBACK_CONTACT_INFO
+    const websiteUrl = formatWebsiteUrl(info.website)
+    const phones = splitPhones(info.phone)
 
     return (
-        <footer className='bg-gray-50 border-t'>
-            <div className='grid lg:grid-cols-5 md:grid-cols-2 grid-cols-1 gap-10 py-10 lg:px-32 px-4'>
-
-                <div className='lg:col-span-1 md:col-span-2 col-span-1'>
-                    <Image
-                        src={logo}
-                        width={383}
-                        height={146}
-                        alt='logo'
-                        className='w-36 mb-2'
-                    />
-                    <p className='text-gray-500 text-sm'>
+        <footer className="relative bg-[#0b0c0f] text-white">
+            <div className="relative max-w-[1400px] mx-auto px-6 lg:px-16 py-14 grid lg:grid-cols-12 gap-12">
+                <div className="lg:col-span-4 flex flex-col gap-5">
+                    <Image src={logo} alt="logo" width={200} height={80} className="w-28 invert brightness-0" />
+                    <p className="text-sm text-white/70 leading-6">
                         Air Control Industries, established in 2016 in Ahmedabad, Gujarat, is a leading supplier of pneumatic products, industrial valves, automation products, and hydraulic hoses. We deliver quality, reliability, and value with strong technical support and dependable service.
                     </p>
+                    <Link
+                        href={WEBSITE_SHOP}
+                        className="inline-flex items-center justify-center px-5 py-3 rounded-md border border-white/15 bg-white/5 text-sm font-semibold text-white hover:bg-white hover:text-black transition-colors w-fit"
+                    >
+                        Find locations
+                    </Link>
                 </div>
 
-                <div>
-                    <h4 className='text-xl font-bold uppercase mb-5'>Company</h4>
-                    <ul>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href="/about-us">Our Journey</Link>
-                        </li>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href={WEBSITE_SHOP}>Shop</Link>
-                        </li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 className='text-xl font-bold uppercase mb-5'>Userfull Links</h4>
-                    <ul>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href={WEBSITE_HOME}>Home</Link>
-                        </li>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href={WEBSITE_SHOP}>Shop</Link>
-                        </li>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href="/about-us">About</Link>
-                        </li>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href={WEBSITE_REGISTER}>Register</Link>
-                        </li>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href={WEBSITE_LOGIN}>Login</Link>
-                        </li>
+                <div className="lg:col-span-8 grid sm:grid-cols-2 md:grid-cols-4 gap-10">
+                    {linkCols.map((col) => (
+                        <div key={col.title} className="space-y-4">
+                            <h4 className="text-sm font-bold uppercase tracking-[0.12em] text-white/80">{col.title}</h4>
+                            <ul className="space-y-2 text-sm text-white/65">
+                                {col.links.map((item) => (
+                                    <li key={item.label}>
+                                        <Link href={item.href} className="hover:text-white transition-colors">
+                                            {item.label}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
 
-                    </ul>
-                </div>
-                <div>
-                    <h4 className='text-xl font-bold uppercase mb-5'>Help Center</h4>
-                    <ul>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href={WEBSITE_REGISTER}>Register</Link>
-                        </li>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href={WEBSITE_LOGIN}>Login</Link>
-                        </li>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href={USER_DASHBOARD}>My Account</Link>
-                        </li>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href="/privacy-policy">Privacy Policy</Link>
-                        </li>
-                        <li className='mb-2 text-gray-500'>
-                            <Link href="/terms-and-conditions">Terms & Conditions</Link>
-                        </li>
-
-
-                    </ul>
-                </div>
-                <div>
-                    <h4 className='text-xl font-bold uppercase mb-5'>Contact Us </h4>
-                    <ul>
-                        {addressLines.length ? (
-                            <li className='mb-2 text-gray-500 flex gap-2'>
-                                <IoLocationOutline size={20} />
-                                <div className='flex flex-col'>
-                                    {addressLines.map((line) => (
-                                        <span key={line} className='text-sm'>{line}</span>
-                                    ))}
-                                </div>
+                    <div className="space-y-4">
+                        <h4 className="text-sm font-bold uppercase tracking-[0.12em] text-white/80">Contact Us</h4>
+                        <ul className="space-y-3 text-sm text-white/65">
+                            <li className="flex gap-2">
+                                <MdLocationOn className="mt-0.5 text-white/60" size={16} />
+                                <span>
+                                    {info.addressLine1}, {info.addressLine2}, {info.city} {info.state} {info.pincode}, {info.country}
+                                </span>
                             </li>
-                        ) : null}
-
-                        {phoneNumbers.length ? (
-                            <li className='mb-2 text-gray-500 flex gap-2'>
-                                <MdOutlinePhone size={20} />
-                                <div className='flex flex-col text-sm'>
-                                    {phoneNumbers.map((phone) => (
-                                        <a key={phone} href={`tel:${phone.replace(/\s+/g, '')}`} className='hover:text-primary'>
-                                            {phone}
-                                        </a>
-                                    ))}
-                                </div>
+                            <li className="flex gap-2">
+                                <MdPhone className="mt-0.5 text-white/60" size={16} />
+                                <span>{phones.join(', ')}</span>
                             </li>
-                        ) : null}
-
-                        {info.email ? (
-                            <li className='mb-2 text-gray-500 flex gap-2'>
-                                <MdOutlineMail size={20} />
-                                <a href={`mailto:${info.email}`} className='hover:text-primary text-sm'>{info.email}</a>
+                            <li className="flex gap-2">
+                                <MdEmail className="mt-0.5 text-white/60" size={16} />
+                                <a href={`mailto:${info.email}`} className="hover:text-white transition-colors">{info.email}</a>
                             </li>
-                        ) : null}
-
-                        {info.website ? (
-                            <li className='mb-2 text-gray-500 flex gap-2'>
-                                <MdOutlineMail size={20} />
-                                <a href={formatWebsiteUrl(info.website)} target='_blank' rel='noopener noreferrer' className='hover:text-primary text-sm'>{info.website}</a>
+                            <li className="flex gap-2">
+                                <IoMdGlobe className="mt-0.5 text-white/60" size={16} />
+                                <a href={websiteUrl} target="_blank" rel="noreferrer" className="hover:text-white transition-colors">{info.website}</a>
                             </li>
-                        ) : null}
+                        </ul>
 
-                    </ul>
-
-
-                    <div className='flex gap-5 mt-5'>
-
-                        <Link href="">
-                            <AiOutlineYoutube className='text-primary' size={25} />
-                        </Link>
-                        <Link href="">
-                            <FaInstagram className='text-primary' size={25} />
-                        </Link>
-                        <Link href="">
-                            <FaWhatsapp className='text-primary' size={25} />
-                        </Link>
-                        <Link href="">
-                            <TiSocialFacebookCircular className='text-primary' size={25} />
-                        </Link>
-                        <Link href="">
-                            <FiTwitter className='text-primary' size={25} />
-                        </Link>
-
+                        <div className="flex items-center gap-3 pt-2">
+                            <a href="#" className="w-9 h-9 rounded-full border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-colors" aria-label="facebook">
+                                <FaFacebookF size={14} />
+                            </a>
+                            <a href="#" className="w-9 h-9 rounded-full border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-colors" aria-label="instagram">
+                                <FaInstagram size={14} />
+                            </a>
+                            <a href="#" className="w-9 h-9 rounded-full border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-colors" aria-label="linkedin">
+                                <FaLinkedinIn size={14} />
+                            </a>
+                            <a href="#" className="w-9 h-9 rounded-full border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-colors" aria-label="youtube">
+                                <FaYoutube size={14} />
+                            </a>
+                            <a href="#" className="w-9 h-9 rounded-full border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-colors" aria-label="twitter">
+                                <FaXTwitter size={14} />
+                            </a>
+                        </div>
                     </div>
-
                 </div>
-
             </div>
 
-
-            <div className='py-5 bg-gray-100' >
-                <p className='text-center'> 2024 Air Control Industries. All Rights Reserved.</p>
+            <div className="relative border-t border-white/10 py-4 text-center text-white/60 text-sm">
+                2024 Air Control Industries. All Rights Reserved.
             </div>
-
         </footer>
     )
 }

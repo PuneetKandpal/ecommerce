@@ -117,6 +117,14 @@ const HomePageConfig = () => {
   )
 
   const formSchema = z.object({
+    hero: z.object({
+      accentText: z.string().optional(),
+      titleLine1: z.string().optional(),
+      titleLine2: z.string().optional(),
+      subtitle: z.string().optional(),
+      ctaText: z.string().optional(),
+      ctaLink: z.string().optional(),
+    }).optional(),
     sliderImages: z.array(z.object({
       id: z.string().optional(),
       url: z.string().url().optional(),
@@ -157,6 +165,14 @@ const HomePageConfig = () => {
     mode: 'onTouched',
     reValidateMode: 'onChange',
     defaultValues: {
+      hero: {
+        accentText: 'Innovation',
+        titleLine1: 'starts',
+        titleLine2: 'with a dream and a plan',
+        subtitle: 'We offer flexible solutions which help your business to grow',
+        ctaText: 'GO TO SHOP',
+        ctaLink: '/shop',
+      },
       sliderImages: [],
       bannerSectionImages: [],
       testimonials: [],
@@ -168,6 +184,7 @@ const HomePageConfig = () => {
 
   useEffect(() => {
     if (homeConfig?.data) {
+      form.setValue('hero', homeConfig.data.hero || form.getValues('hero'))
       form.setValue('sliderImages', homeConfig.data.sliderImages || [])
       form.setValue('bannerSectionImages', homeConfig.data.bannerSectionImages || [])
       form.setValue('testimonials', homeConfig.data.testimonials || [])
@@ -195,6 +212,7 @@ const HomePageConfig = () => {
     setLoadingHome(true)
     try {
       const { data: res } = await axios.put('/api/site-config/home', {
+        hero: values.hero || {},
         sliderImages: values.sliderImages || [],
         bannerSectionImages: values.bannerSectionImages || [],
         testimonials: values.testimonials || [],
@@ -231,6 +249,62 @@ const HomePageConfig = () => {
         <Form {...form}>
           <form onSubmit={(e) => e.preventDefault()} className='space-y-5'>
             <div className='space-y-4'>
+                <div className='rounded-xl border border-gray-200 bg-white p-5 shadow-sm'>
+                  <h5 className='font-medium mb-2'>Hero Content</h5>
+                  <p className='text-sm text-gray-600 mb-4'>Update the heading/subtitle and CTA shown on the homepage slider.</p>
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                    <div>
+                      <label className='text-xs text-gray-500 mb-1 block'>Accent Text (Yellow)</label>
+                      <Input
+                        placeholder='Innovation'
+                        value={form.watch('hero')?.accentText || ''}
+                        onChange={(e) => form.setValue('hero', { ...(form.getValues('hero') || {}), accentText: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className='text-xs text-gray-500 mb-1 block'>Title Line 1</label>
+                      <Input
+                        placeholder='starts'
+                        value={form.watch('hero')?.titleLine1 || ''}
+                        onChange={(e) => form.setValue('hero', { ...(form.getValues('hero') || {}), titleLine1: e.target.value })}
+                      />
+                    </div>
+                    <div className='md:col-span-2'>
+                      <label className='text-xs text-gray-500 mb-1 block'>Title Line 2</label>
+                      <Input
+                        placeholder='with a dream and a plan'
+                        value={form.watch('hero')?.titleLine2 || ''}
+                        onChange={(e) => form.setValue('hero', { ...(form.getValues('hero') || {}), titleLine2: e.target.value })}
+                      />
+                    </div>
+                    <div className='md:col-span-2'>
+                      <label className='text-xs text-gray-500 mb-1 block'>Subtitle</label>
+                      <Textarea
+                        rows={2}
+                        placeholder='We offer flexible solutions which help your business to grow'
+                        value={form.watch('hero')?.subtitle || ''}
+                        onChange={(e) => form.setValue('hero', { ...(form.getValues('hero') || {}), subtitle: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className='text-xs text-gray-500 mb-1 block'>CTA Text</label>
+                      <Input
+                        placeholder='GO TO SHOP'
+                        value={form.watch('hero')?.ctaText || ''}
+                        onChange={(e) => form.setValue('hero', { ...(form.getValues('hero') || {}), ctaText: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className='text-xs text-gray-500 mb-1 block'>CTA Link</label>
+                      <Input
+                        placeholder='/shop'
+                        value={form.watch('hero')?.ctaLink || ''}
+                        onChange={(e) => form.setValue('hero', { ...(form.getValues('hero') || {}), ctaLink: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className='rounded-xl border border-gray-200 bg-white p-5 shadow-sm'>
                   <h5 className='font-medium mb-2'>Slider Images (Carousel)</h5>
                   <p className='text-sm text-gray-600 mb-3'>

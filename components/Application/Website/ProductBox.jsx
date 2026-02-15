@@ -3,25 +3,40 @@ import React from 'react'
 import imgPlaceholder from '@/public/assets/images/img-placeholder.webp'
 import Link from 'next/link'
 import { WEBSITE_PRODUCT_DETAILS } from '@/routes/WebsiteRoute'
+
 const ProductBox = ({ product }) => {
 
     return (
-        <div className='rounded-lg hover:shadow-lg border overflow-hidden'>
-            <Link href={WEBSITE_PRODUCT_DETAILS(product.slug)}>
-                <Image
-                    src={product?.media[0]?.secure_url || imgPlaceholder.src}
-                    width={400}
-                    height={400}
-                    alt={product?.media[0]?.alt || product?.name}
-                    title={product?.media[0]?.title || product?.name}
-                    className='w-full lg:h-[300px] sm:h-[250px] h-[150px] object-cover object-top'
-                />
-                <div className="p-3 border-t">
-                    <h4>{product?.name}</h4>
-                    <p className='flex gap-2 text-sm mt-2'>
-                        <span className='line-through text-gray-400'>{product?.mrp.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}</span>
-                        <span className='font-semibold'>{product?.sellingPrice.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}</span>
-                    </p>
+        <div className='group rounded-2xl border border-gray-200 bg-white overflow-hidden transition-all hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5'>
+            <Link href={WEBSITE_PRODUCT_DETAILS(product.slug)} className='block'>
+                <div className='relative bg-gray-50'>
+                    <Image
+                        src={product?.media?.[0]?.secure_url || imgPlaceholder.src}
+                        width={520}
+                        height={520}
+                        alt={product?.media?.[0]?.alt || product?.name}
+                        title={product?.media?.[0]?.title || product?.name}
+                        className='w-full aspect-square object-contain transition-transform duration-500 group-hover:scale-[1.04]'
+                    />
+                </div>
+
+                <div className='p-4 border-t border-gray-100'>
+                    <h4 className='text-[15px] font-bold text-gray-900 leading-5 line-clamp-2 min-h-[40px]'>
+                        {product?.name}
+                    </h4>
+
+                    <div className='flex items-baseline gap-2 mt-3'>
+                        {product?.mrp ? (
+                            <span className='text-sm line-through text-gray-400'>
+                                {product.mrp.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
+                            </span>
+                        ) : null}
+                        {product?.sellingPrice ? (
+                            <span className='text-[15px] font-extrabold text-gray-900'>
+                                {product.sellingPrice.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
+                            </span>
+                        ) : null}
+                    </div>
                 </div>
             </Link>
         </div>

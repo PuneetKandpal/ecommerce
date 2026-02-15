@@ -22,7 +22,17 @@ const sliderImageObject = z.object({
   link: z.string().optional(),
 })
 
+const heroSchema = z.object({
+  accentText: z.string().optional(),
+  titleLine1: z.string().optional(),
+  titleLine2: z.string().optional(),
+  subtitle: z.string().optional(),
+  ctaText: z.string().optional(),
+  ctaLink: z.string().optional(),
+}).optional()
+
 const schema = z.object({
+  hero: heroSchema,
   sliderImages: z.array(sliderImageObject).optional(),
   bannerSectionImages: z.array(sliderImageObject).max(2).optional(),
   brandsMarqueeCompanies: z.array(z.object({
