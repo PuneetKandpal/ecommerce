@@ -1,112 +1,84 @@
+
 'use client'
 import React from 'react'
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-import Slider from "react-slick";
+import Slider from 'react-slick'
+import Image from 'next/image'
+import { LuChevronRight, LuChevronLeft } from 'react-icons/lu'
 
-import slider1 from '@/public/assets/images/slider-1.png'
-import slider2 from '@/public/assets/images/slider-2.png'
-import slider3 from '@/public/assets/images/slider-3.png'
-import slider4 from '@/public/assets/images/slider-4.png'
-import Image from 'next/image';
-import { LuChevronRight } from "react-icons/lu";
-import { LuChevronLeft } from "react-icons/lu";
+const ArrowNext = ({ onClick }) => (
+    <button
+        onClick={onClick}
+        type="button"
+        aria-label="Next slide"
+        className="w-20 h-20 flex items-center justify-center absolute z-30 bottom-0 right-0 bg-[var(--primary)] text-white"
+    >
+        <LuChevronRight size={22} />
+    </button>
+)
 
-const ArrowNext = (props) => {
-    const { onClick } = props
-    return (
-        <button
-            onClick={onClick}
-            type='button'
-            className='w-16 h-16 flex justify-center items-center absolute z-30 bottom-6 right-6 bg-primary border border-primary shadow-lg'
-        >
-            <LuChevronRight size={22} className='text-black' />
-        </button>
-    )
-}
+const ArrowPrev = ({ onClick }) => (
+    <button
+        onClick={onClick}
+        type="button"
+        aria-label="Previous slide"
+        className="w-20 h-20 flex items-center justify-center absolute z-30 bottom-0 right-20 bg-white text-black"
+    >
+        <LuChevronLeft size={22} />
+    </button>
+)
 
-const ArrowPrev = (props) => {
-    const { onClick } = props
-    return (
-        <button
-            onClick={onClick}
-            type='button'
-            className='w-16 h-16 flex justify-center items-center absolute z-30 bottom-6 right-6 -translate-x-full transform bg-white border border-gray-200 shadow-lg'
-        >
-            <LuChevronLeft size={22} className='text-gray-800' />
-        </button>
-    )
-}
-
-const MainSlider = ({ images = [] }) => {
-
+const MainSlider = React.forwardRef(({ images = [], onSlideChange }, ref) => {
     const settings = {
-        dots: true,
+        dots: false,
         infinite: true,
-        speed: 500,
+        speed: 800,
         autoplay: true,
+        autoplaySpeed: 6000,
         nextArrow: <ArrowNext />,
         prevArrow: <ArrowPrev />,
-
+        afterChange: (idx) => {
+            if (onSlideChange) onSlideChange(idx)
+        },
         responsive: [
             {
                 breakpoint: 480,
                 settings: {
                     dots: false,
-                    arrow: false,
-                    nextArrow: '',
-                    prevArrow: ''
+                    nextArrow: <></>,
+                    prevArrow: <></>,
                 }
             }
         ]
     }
 
-    const imagesToShow = images.length > 0 ? images : [
-        { src: slider1.src, width: slider1.width, height: slider1.height, alt: 'slider 1', isStatic: true },
-        { src: slider2.src, width: slider2.width, height: slider2.height, alt: 'slider 2', isStatic: true },
-        { src: slider3.src, width: slider3.width, height: slider3.height, alt: 'slider 3', isStatic: true },
-        { src: slider4.src, width: slider4.width, height: slider4.height, alt: 'slider 4', isStatic: true }
-    ]
-
     return (
-        <div className="h-[calc(100vh-100px)] relative">
-            <Slider {...settings}>
-                {imagesToShow.map((image, index) => (
-                    <div key={index} className="outline-none h-[calc(100vh-100px)]">
-                        {image.secure_url || image.url ? (
-                            <img
-                                src={image.secure_url || image.url}
-                                alt={image.alt || `Slider ${index + 1}`}
-                                className="w-full h-full object-cover"
-                            />
-                        ) : image.isStatic ? (
-                            <div className="relative w-full h-full">
-                                <Image
-                                    src={image.src}
-                                    fill
-                                    sizes="100vw"
-                                    alt={image.alt}
-                                    className="object-cover"
-                                    priority={index === 0}
-                                />
+        <div className="relative min-h-[500px] sm:min-h-[600px] lg:h-[50vh] xl:h-[90vh]">
+            <Slider ref={ref} {...settings} className="h-full">
+                {images.map((image, index) => {
+                    const src = image?.secure_url || image?.url || image?.src || ''
+                    return (
+                        <div key={index} className="outline-none">
+                            <div className="relative min-h-[500px] sm:min-h-[600px] lg:h-[50vh] xl:h-[90vh] bg-cover bg-center w-full"
+                                style={{ backgroundImage: `url('${src}')` }}
+                            >
+                                {/* Dark scrim + overlay texture — matching HTML exactly */}
+                                <div className="absolute inset-0 bg-black/50">
+                                    <img
+                                        src="/assets/img/overlay_light.png"
+                                        className="w-full h-full object-cover opacity-60"
+                                        alt=""
+                                        aria-hidden="true"
+                                    />
+                                </div>
                             </div>
-                        ) : (
-                            <div className="relative w-full h-full">
-                                <Image
-                                    src={image.src}
-                                    fill
-                                    sizes="100vw"
-                                    alt={image.alt || `Slider ${index + 1}`}
-                                    className="object-cover"
-                                    priority={index === 0}
-                                />
-                            </div>
-                        )}
-                    </div>
-                ))}
+                        </div>
+                    )
+                })}
             </Slider>
         </div>
     )
-}
+})
+
+MainSlider.displayName = 'MainSlider'
 
 export default MainSlider

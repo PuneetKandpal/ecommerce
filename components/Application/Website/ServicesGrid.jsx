@@ -1,84 +1,96 @@
 'use client'
-
-import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { LuImage } from 'react-icons/lu'
+import { LuImage, LuChevronRight } from 'react-icons/lu'
 
 const ServicesGrid = ({ categories = [] }) => {
-    const items = Array.isArray(categories) ? categories.slice(0, 9) : []
+  const items = Array.isArray(categories) ? categories.slice(0, 6) : []
 
-    return (
-        <section className="relative py-20 bg-white overflow-hidden">
-            <motion.div
-                className="absolute inset-0 opacity-[0.28]"
-                style={{
-                    backgroundImage: "url('/assets/images/9e9dd376-0589-4a17-989e-e28f17c959f1.jpg')",
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'center',
-                    backgroundSize: 'cover'
-                }}
-                aria-hidden="true"
-                animate={{ scale: [1, 1.03, 1], backgroundPosition: ['50% 50%', '50% 54%', '50% 50%'] }}
-                transition={{ duration: 18, ease: 'easeInOut', repeat: Infinity }}
-            />
-            <div className="relative lg:px-32 px-4">
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4 }}
-                    className="mb-8"
-                >
-                    <h2 className="text-3xl lg:text-4xl font-black text-gray-900">Shop by Category</h2>
-                </motion.div>
+  return (
+    <section className="relative py-12 md:py-18 lg:py-24 overflow-hidden">
+    <div className="top-gradient gradient"></div>
+      {/* Background pattern */}
+    <div className="absolute inset-0  bg-[url('../img/map_transparent_dark.png')] bg-center bg-no-repeat bg-contain" ></div>
 
-                <motion.div
-                    initial="hidden"
-                    whileInView="show"
-                    viewport={{ once: true, amount: 0.25 }}
-                    variants={{
-                        hidden: {},
-                        show: { transition: { staggerChildren: 0.08 } }
-                    }}
-                    className="grid md:grid-cols-3 lg:grid-cols-4 gap-4"
-                >
-                    {items.map((category, index) => {
-                        const slug = category?.slug || ''
-                        const href = slug ? `/shop?category=${slug}` : '/shop'
-                        const img = category?.image?.secure_url
+      {/* Overlay */}
+      <div className="absolute inset-0">
+        <img
+          src="/assets/img/overlay_dark.png"
+          className="w-full h-full"
+          alt=""
+          aria-hidden="true"
+        />
+      </div>
 
-                        return (
-                            <Link href={href} key={category?._id || slug || index} className="block">
-                                <motion.div
-                                    variants={{
-                                        hidden: { opacity: 0, y: 16 },
-                                        show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } }
-                                    }}
-                                    whileHover={{ y: -3, scale: 1.01 }}
-                                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                                    className="group border border-gray-200 rounded-[10px] bg-white text-gray-900 hover:shadow-lg hover:shadow-black/5 hover:border-primary/50 p-6 h-full"
-                                >
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-20 h-20 flex items-center justify-center rounded-full bg-gray-100 overflow-hidden border border-gray-200 transition-transform duration-300 group-hover:scale-110">
-                                            {img ? (
-                                                <img src={img} alt={category?.name || 'category'} className="w-full h-full object-contain" />
-                                            ) : (
-                                                <LuImage className="text-gray-400" size={22} />
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h3 className="text-base font-bold mb-2 group-hover:text-primary transition-colors">{category?.name}</h3>
-                                            <p className="text-sm text-gray-500 leading-6 line-clamp-3">Browse products in this category.</p>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            </Link>
-                        )
-                    })}
-                </motion.div>
-            </div>
-        </section>
-    )
+      {/* Container */}
+      <div className="relative z-10 max-w-3xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto px-3 lg:px-8 xl:px-0 z-10">
+
+        {/* Section Title */}
+        <div className="mb-6">
+          <span className="uppercase text-sm border-l-4 border-[var(--primary)] pl-3 font-bold">
+            Shop by Category
+          </span>
+        </div>
+
+        {/* GRID — border on wrapper top+left, each card adds bottom+right = seamless grid lines */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-t border-l border-gray-200 shadow-[0_8px_24px_0_rgb(0,0,0,0.08)]">
+          {items.map((category, index) => {
+            const slug = category?.slug || ''
+            const href = slug ? `/shop?category=${slug}` : '/shop'
+            const img = category?.image?.secure_url || category?.image?.url
+
+            return (
+              <Link
+                href={href}
+                key={category?._id || index}
+                className="block border-b border-r border-gray-200"
+              >
+                <div className="p-10 bg-white/70 backdrop-blur-sm home-category-box h-full transition-all duration-300 hover:bg-white">
+
+                  {/* Image */}
+                  <div className="mb-6">
+                    <div>
+                      {img ? (
+                        <img
+                          src={img}
+                          alt={category?.name || 'category'}
+                          className="w-20 h-20 rounded-full object-contain bg-white border border-grey-100"
+                        />
+                      ) : (
+                        <LuImage size={32} className="text-gray-300" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="text-2xl font-bold mb-4 whitespace-pre-line">
+                    {category?.name}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-gray-600 leading-relaxed">
+                    Browse products in this category.
+                  </p>
+
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+
+        {/* Button */}
+        <div className="text-center">
+          <Link
+            href="/shop"
+            className="et-black-button inline-block mt-8 border border-white px-8 py-3 text-sm uppercase tracking-widest transition duration-300"
+          >
+            View all
+            <LuChevronRight className="inline ml-1" />
+          </Link>
+        </div>
+
+      </div>
+    </section>
+  )
 }
 
 export default ServicesGrid
