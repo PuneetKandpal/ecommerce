@@ -1,17 +1,13 @@
 'use client'
-import { Button } from '@/components/ui/button'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Progress } from '@/components/ui/progress'
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { zSchema } from '@/lib/zodSchema'
 import { zodResolver } from '@hookform/resolvers/zod'
 import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { IoStar } from 'react-icons/io5'
 import ButtonLoading from '../ButtonLoading'
 import { useSelector } from 'react-redux'
 import { Rating } from '@mui/material'
-import { Textarea } from '@/components/ui/textarea'
+import { IoStar } from 'react-icons/io5'
 import axios from 'axios'
 import Link from 'next/link'
 import { WEBSITE_LOGIN } from '@/routes/WebsiteRoute'
@@ -26,16 +22,8 @@ const ProductReveiw = ({ productId }) => {
     const [loading, setLoading] = useState(false)
     const [currentUrl, setCurrentUrl] = useState('')
     const [isReview, setIsReview] = useState(false)
-    const [reviewCount, setReviewCount] = useState()
 
     const { data: reviewDetails } = useFetch(`/api/review/details?productId=${productId}`)
-
-    useEffect(() => {
-        if (reviewDetails && reviewDetails.success) {
-            const reviewCountData = reviewDetails.data
-            setReviewCount(reviewCountData)
-        }
-    }, [reviewDetails])
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -62,21 +50,25 @@ const ProductReveiw = ({ productId }) => {
         },
     })
 
-
     useEffect(() => {
-        form.setValue('userId', auth?._id)
-    }, [auth])
+        if (auth?._id) form.setValue('userId', auth._id)
+    }, [auth, form])
 
     const handleReviewSubmit = async (values) => {
         setLoading(true)
         try {
             const { data: response } = await axios.post('/api/review/create', values)
-            if (!response.success) {
-                throw new Error(response.message)
-            }
+            if (!response.success) throw new Error(response.message)
 
-            form.reset()
+            form.reset({
+                product: productId,
+                userId: auth?._id,
+                rating: 0,
+                title: "",
+                review: "",
+            })
             showToast('success', response.message)
+            setIsReview(false)
             queryClient.invalidateQueries(['product-review'])
         } catch (error) {
             showToast('error', error.message)
@@ -85,185 +77,167 @@ const ProductReveiw = ({ productId }) => {
         }
     }
 
-
     const fetchReview = async (pageParam) => {
         const { data: getReviewData } = await axios.get(`/api/review/get?productId=${productId}&page=${pageParam}`)
-        if (!getReviewData.success) {
-            return
-        }
-
-        return getReviewData.data
+        return getReviewData.success ? getReviewData.data : null
     }
 
-
-    const { error, data, isFetching, fetchNextPage, hasNextPage } = useInfiniteQuery({
+    const { data, isFetching, fetchNextPage, hasNextPage } = useInfiniteQuery({
         queryKey: ['product-review'],
         queryFn: async ({ pageParam }) => await fetchReview(pageParam),
         initialPageParam: 0,
-        getNextPageParam: (lastPage) => {
-            return lastPage.nextPage
-        }
+        getNextPageParam: (lastPage) => lastPage?.nextPage
     })
 
-
-
     return (
-        <div className="shadow rounded border mb-20">
-            <div className="p-3 bg-gray-50 border-b">
-                <h2 className="font-semibold text-2xl">Rating & Reviews</h2>
-            </div>
-            <div className="p-5">
-                <div className='flex justify-between flex-wrap items-center'>
-                    <div className='md:w-1/2 w-full md:flex md:gap-10 md:mb-0 mb-5'>
-                        <div className='md:w-[200px] w-full md:mb-0 mb-5'>
-                            <h4 className='text-center text-8xl font-semibold'>{reviewCount?.averageRating}</h4>
-                            <div className='flex justify-center gap-2'>
-                                <IoStar />
-                                <IoStar />
-                                <IoStar />
-                                <IoStar />
-                                <IoStar />
+        <div id="review" className="tab-content relative">
+            <button
+                className="add-review-btn !absolute right-0 top-0 cursor-pointer"
+                onClick={() => setIsReview(!isReview)}
+            >
+                Add Review
+            </button>
+
+            <div className={`review-wrapper overflow-hidden transition-all duration-500 ${isReview ? 'max-h-[9999px] mb-10' : 'max-h-0'}`}>
+                <div className="mb-6">
+                    <h2 className="text-sm font-bold relative ps-4 uppercase overflow-hidden tracking-wider mb-6 py-2
+                        before:content-[''] before:absolute before:left-0 before:top-1 before:-translate-y-1/10
+                        before:w-6 before:h-80 before:border-l-5 before:border-[var(--primary)] text-dark">
+                        Add a review
+                    </h2>
+
+                    <div className="border-b border-b-[var(--text-light)] pb-4 flex flex-col gap-3">
+                        <p className="text-[var(--text-gray)]">Your email address will not be published. Required fields are marked *</p>
+
+                        {!auth ? (
+                            <div className="flex flex-col gap-3">
+                                <p className="text-[var(--text-gray)]">Login to submit a review.</p>
+                                <Link href={`${WEBSITE_LOGIN}?callback=${currentUrl}`} className="cart-btn w-fit">
+                                    Login
+                                </Link>
                             </div>
-
-                            <p className='text-center mt-3'>
-                                ({reviewCount?.totalReview} Rating & Reviews)
-                            </p>
-                        </div>
-
-                        <div className='md:w-[calc(100%-200px)] flex items-center'>
-                            <div className='w-full'>
-
-                                {[5, 4, 3, 2, 1].map(rating => (
-                                    <div key={rating} className='flex items-center gap-2 mb-2'>
-                                        <div className='flex items-center gap-1'>
-                                            <p className='w-3'>{rating}</p>
-                                            <IoStar />
-                                        </div>
-                                        <Progress value={reviewCount?.percentage[rating]} />
-                                        <span className='text-sm'>{reviewCount?.rating[rating]}</span>
-                                    </div>
-                                ))}
-
-
-
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div className='md:w-1/2 w-full md:text-end text-center'>
-                        <Button onClick={() => setIsReview(!isReview)} type="button" variant="outline" className="md:w-fit w-full py-6 px-10">
-                            Write Review
-                        </Button>
-                    </div>
-                </div>
-
-                {isReview &&
-
-
-                    <div className='my-5'>
-                        <hr className='mb-5' />
-                        <h4 className='text-xl font-semibold mb-3'>Write A Review</h4>
-                        {!auth
-                            ?
-                            <>
-                                <p className='mb-2'>Login to submit review.</p>
-                                <Button type="button" asChild>
-                                    <Link href={`${WEBSITE_LOGIN}?callback=${currentUrl}`}>Login</Link>
-                                </Button>
-                            </>
-                            :
-                            <>
-
-                                <Form {...form}>
-                                    <form onSubmit={form.handleSubmit(handleReviewSubmit)} >
-
-                                        <div className='mb-5'>
-                                            <FormField
-                                                control={form.control}
-                                                name="rating"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormControl>
+                        ) : (
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(handleReviewSubmit)}>
+                                    <div className="mb-4 flex gap-3 items-center">
+                                        <label>Your Rating *</label>
+                                        <FormField
+                                            control={form.control}
+                                            name="rating"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <div className="flex gap-1">
                                                             <Rating
-                                                                value={field.value}
-                                                                size="large"
-                                                                {...field}
+                                                                value={Number(field.value)}
+                                                                onChange={(_, newValue) => field.onChange(newValue)}
+                                                                size="medium"
+                                                                icon={<IoStar className="text-[var(--primary)]" fontSize="inherit" />}
+                                                                emptyIcon={<IoStar className="text-[var(--text-light)]" fontSize="inherit" />}
                                                             />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <div className='mb-5'>
-                                            <FormField
-                                                control={form.control}
-                                                name="title"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Title</FormLabel>
-                                                        <FormControl>
-                                                            <Input type="text" placeholder="Review title" {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <div className='mb-5'>
-                                            <FormField
-                                                control={form.control}
-                                                name="review"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Review</FormLabel>
-                                                        <FormControl>
-                                                            <Textarea placeholder="Write your comment here..." {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
+                                                        </div>
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
 
-                                        <div className='mb-3'>
-                                            <ButtonLoading loading={loading} type="submit" text="Submit Review" className="cursor-pointer" />
-                                        </div>
+                                    <div className="mb-4">
+                                        <label htmlFor="user_review">Your Review *</label>
+                                        <FormField
+                                            control={form.control}
+                                            name="review"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <div className="flex items-start border border-[var(--input-border)] focus-within:ring-1 focus-within:ring-[var(--input-focus)] transition bg-white">
+                                                            <textarea
+                                                                {...field}
+                                                                id="user_review"
+                                                                rows="4"
+                                                                className="w-full text-base ps-[var(--input-x-padding)] py-[var(--input-y-padding)] outline-none bg-transparent resize-none"
+                                                            />
+                                                        </div>
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
 
-                                    </form>
-                                </Form>
-                            </>
-                        }
+                                    <div className="mb-4">
+                                        <label htmlFor="review_title">Title *</label>
+                                        <FormField
+                                            control={form.control}
+                                            name="title"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <div className="flex items-center border border-[var(--input-border)] focus-within:ring-1 focus-within:ring-[var(--input-focus)] transition bg-white">
+                                                            <input
+                                                                {...field}
+                                                                id="review_title"
+                                                                type="text"
+                                                                className="w-full text-base ps-[var(--input-x-padding)] py-[var(--input-y-padding)] outline-none bg-transparent"
+                                                            />
+                                                        </div>
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
 
-
+                                    <div className="mb-3">
+                                        <ButtonLoading loading={loading} type="submit" text="Submit Review" className="cart-btn cursor-pointer" />
+                                    </div>
+                                </form>
+                            </Form>
+                        )}
                     </div>
+                </div>
+            </div>
 
-                }
+            <div className="mb-3">
+                <h2 className="text-sm font-bold relative ps-4 uppercase overflow-hidden tracking-wider mb-6 py-2
+                        before:content-['']
+                        before:absolute
+                        before:left-0
+                        before:top-1
+                        before:-translate-y-1/10
+                        before:w-6
+                        before:h-80
+                        before:border-l-5
+                        before:border-[var(--primary)] text-dark">
+                    Customer review
+                </h2>
 
-
-                <div className='mt-10 border-t pt-5'>
-                    <h5 className='text-xl font-semibold'>{data?.pages[0]?.totalReview || 0} Reviews</h5>
-
-                    <div className='mt-10'>
-                        {data && data.pages.map(page => (
-                            page.reviews.map(review => (
-                                <div className='mb-5' key={review._id}>
-                                    <ReviewList review={review} />
-                                </div>
-                            ))
-                        ))}
-
-                        {hasNextPage &&
-                            <ButtonLoading text="Load More" type="button" loading={isFetching} onClick={fetchNextPage} />
-                        }
-
-                    </div>
-
+                <div className="flex flex-col gap-4">
+                    {data?.pages?.map((page, i) => (
+                        <React.Fragment key={i}>
+                            {page?.reviews?.map(review => (
+                                <ReviewList key={review._id} review={review} />
+                            ))}
+                        </React.Fragment>
+                    ))}
                 </div>
 
+                {hasNextPage && (
+                    <div className="mt-6">
+                        <ButtonLoading
+                            text="Load More"
+                            type="button"
+                            loading={isFetching}
+                            onClick={() => fetchNextPage()}
+                            className="cart-btn"
+                        />
+                    </div>
+                )}
 
-
+                {data?.pages?.[0]?.reviews?.length === 0 && (
+                    <p className="text-[var(--text-gray)] mt-4">No reviews yet. Be the first to review this product!</p>
+                )}
             </div>
         </div>
     )

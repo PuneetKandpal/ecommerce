@@ -8,7 +8,6 @@ import FeaturedProduct from '@/components/Application/Website/FeaturedProduct'
 import Testimonial from '@/components/Application/Website/Testimonial'
 import OurStory from '@/components/Application/Website/OurStory'
 import LeadingSupplier from '@/components/Application/Website/LeadingSupplier'
-
 import { getSiteConfigGroup } from '@/lib/getSiteConfig'
 import { getCategories } from '@/lib/categoryService'
 
@@ -51,9 +50,11 @@ const Home = async () => {
             <Testimonial testimonials={testimonials} />
 
             <PartnersGrid companies={brandsMarqueeCompanies} />
+
             <OurStory/>
             
             <LeadingSupplier/>
+            
             <FeaturedProduct />
         </>
     )

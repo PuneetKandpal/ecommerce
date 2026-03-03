@@ -1,21 +1,147 @@
+
 'use client'
 import useFetch from '@/hooks/useFetch'
 import React, { useEffect, useState } from 'react'
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from "@/components/ui/accordion"
-import { Checkbox } from '@/components/ui/checkbox'
-import { Slider } from '@/components/ui/slider'
 import ButtonLoading from '../ButtonLoading'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { WEBSITE_SHOP } from '@/routes/WebsiteRoute'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
-const Filter = () => {
+// ── Individual accordion group ──
+const FilterAccordion = ({ label, children }) => {
+    const [open, setOpen] = useState(false)
+    return (
+        <div className="relative inline-block w-full">
+            <button
+                type="button"
+                onClick={() => setOpen(prev => !prev)}
+                className="px-4 py-4 relative z-10 w-full bg-white shadow text-lg font-bold hover:text-[var(--primary)] text-left text-black rounded flex justify-between items-center"
+            >
+                {label}
+                <i className={`fa-solid fa-chevron-right transition-transform duration-300 ${open ? 'rotate-90' : ''}`} />
+            </button>
+            <div
+                className={`overflow-hidden relative transition-all duration-300 ease-in-out ps-5 w-full bg-white
+                    before:content-[''] before:absolute before:left-5 before:border-l-2
+                    before:border-[var(--input-border)] before:block before:w-full before:h-full
+                    before:pointer-events-none before:z-0
+                    ${open ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}
+            >
+                {children}
+            </div>
+        </div>
+    )
+}
+
+// ── Checkbox label row ──
+const FilterCheckbox = ({ label, checked, onChange, isFirst, isLast }) => (
+    <label
+        className={`flex items-center gap-3 px-4 py-2 text-lg font-bold relative z-10 hover:text-[var(--primary)] cursor-pointer
+            ${isFirst ? 'pt-6' : ''} ${isLast ? 'pb-6' : ''}`}
+    >
+        <input
+            type="checkbox"
+            checked={checked}
+            onChange={onChange}
+            className="w-5 h-5 min-w-5 min-h-5 accent-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+        />
+        <span>{label}</span>
+    </label>
+)
+
+// ── Section heading (styled like PHP) ──
+const SectionHeading = ({ children }) => (
+    <h2 className="text-xl font-bold text-black relative mb-8
+        before:content-[''] before:absolute before:left-0 before:-bottom-2 before:-translate-y-1/2
+        before:w-6 before:h-2 before:border-b-2 before:border-[var(--primary)]
+        after:content-[''] after:absolute after:left-7 after:-bottom-2 after:-translate-y-1/2
+        after:w-10 after:h-2 after:border-b-2 after:border-[var(--text-light)]">
+        {children}
+    </h2>
+)
+const PriceRange = ({ onApply, initialMin = 0, initialMax = 100000 }) => {
+    const max = 100000
+
+    const [minVal, setMinVal] = useState(initialMin)
+    const [maxVal, setMaxVal] = useState(initialMax)
+
+    // 🔥 Sync with URL when it changes
+    useEffect(() => {
+        setMinVal(initialMin)
+        setMaxVal(initialMax)
+    }, [initialMin, initialMax])
+
+    const formatINR = (num) => new Intl.NumberFormat('en-IN').format(num)
+
+    const leftPct = (minVal / max) * 100
+    const widthPct = ((maxVal - minVal) / max) * 100
+
+    return (
+        <div>
+            <SectionHeading>Filter by price</SectionHeading>
+
+            <div className="w-full space-y-5 mt-5">
+                <div className="relative h-6">
+
+                    {/* Track */}
+                    <div className="absolute top-1/2 -translate-y-1/2 w-full h-1 bg-gray-300 rounded" />
+
+                    {/* Active fill */}
+                    <div
+                        className="absolute top-1/2 -translate-y-1/2 h-1 bg-[var(--primary)] rounded"
+                        style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                    />
+
+                    {/* Min thumb */}
+                    <input
+                        type="range"
+                        min={0}
+                        max={max}
+                        step={1000}
+                        value={minVal}
+                        onChange={(e) => {
+                            const val = Math.min(Number(e.target.value), maxVal - 1000)
+                            setMinVal(val)
+                        }}
+                        className="range-input"
+                    />
+
+                    {/* Max thumb */}
+                    <input
+                        type="range"
+                        min={0}
+                        max={max}
+                        step={1000}
+                        value={maxVal}
+                        onChange={(e) => {
+                            const val = Math.max(Number(e.target.value), minVal + 1000)
+                            setMaxVal(val)
+                        }}
+                        className="range-input"
+                    />
+                </div>
+
+                <div className="flex items-center justify-between mt-4">
+                    <button
+                        type="button"
+                        onClick={() => onApply(minVal, maxVal)}
+                        className="bg-[var(--primary)] hover:bg-black hover:text-white px-4 py-2 font-semibold transition-colors duration-200"
+                    >
+                        Filter
+                    </button>
+
+                    <p className="price-text text-sm">
+                        Price: ₹{formatINR(minVal)} — ₹{formatINR(maxVal)}
+                    </p>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ── Main Filter component — all original dynamic logic kept ──
+const Filter = ({ onClose }) => {
     const searchParams = useSearchParams()
     const router = useRouter()
     const urlSearchParams = new URLSearchParams(searchParams.toString())
@@ -24,23 +150,21 @@ const Filter = () => {
     const [selectedCategory, setSelectedCategory] = useState([])
     const [selectedAttributes, setSelectedAttributes] = useState({})
 
-    const { data: categoryData } = useFetch('/api/category/get-category')
-    
+    const { data: categoryData, loading: categoryLoading } = useFetch('/api/category/get-category')
+
     // Fetch attributes based on selected categories
-    const attributesUrl = selectedCategory.length > 0 
-        ? `/api/product-variant/attributes?category=${selectedCategory.join(',')}` 
+    const attributesUrl = selectedCategory.length > 0
+        ? `/api/product-variant/attributes?category=${selectedCategory.join(',')}`
         : '/api/product-variant/attributes'
-    const { data: attributesData } = useFetch(attributesUrl)
+    const { data: attributesData, loading: attributesLoading } = useFetch(attributesUrl)
 
     useEffect(() => {
-        // Load category from URL
         if (searchParams.get('category')) {
             setSelectedCategory(searchParams.get('category').split(','))
         } else {
             setSelectedCategory([])
         }
 
-        // Load dynamic attributes from URL (attr_diameter, attr_color, etc.)
         const attrs = {}
         for (const [key, value] of searchParams.entries()) {
             if (key.startsWith('attr_')) {
@@ -51,10 +175,6 @@ const Filter = () => {
         setSelectedAttributes(attrs)
     }, [searchParams])
 
-    const handlePriceChange = (value) => {
-        setPriceFilter({ minPrice: value[0], maxPrice: value[1] })
-    }
-
     const handleCategoryFilter = (categorySlug) => {
         let newSelectedCategory = [...selectedCategory]
         if (newSelectedCategory.includes(categorySlug)) {
@@ -62,37 +182,27 @@ const Filter = () => {
         } else {
             newSelectedCategory.push(categorySlug)
         }
-
         setSelectedCategory(newSelectedCategory)
-
         if (newSelectedCategory.length > 0) {
             urlSearchParams.set('category', newSelectedCategory.join(','))
         } else {
             urlSearchParams.delete('category')
         }
-
         router.push(`${WEBSITE_SHOP}?${urlSearchParams}`)
     }
 
     const handleAttributeFilter = (attrKey, attrValue) => {
         const newSelectedAttributes = { ...selectedAttributes }
-        
-        if (!newSelectedAttributes[attrKey]) {
-            newSelectedAttributes[attrKey] = []
-        }
+        if (!newSelectedAttributes[attrKey]) newSelectedAttributes[attrKey] = []
 
         if (newSelectedAttributes[attrKey].includes(attrValue)) {
             newSelectedAttributes[attrKey] = newSelectedAttributes[attrKey].filter(v => v !== attrValue)
-            if (newSelectedAttributes[attrKey].length === 0) {
-                delete newSelectedAttributes[attrKey]
-            }
+            if (newSelectedAttributes[attrKey].length === 0) delete newSelectedAttributes[attrKey]
         } else {
             newSelectedAttributes[attrKey].push(attrValue)
         }
-
         setSelectedAttributes(newSelectedAttributes)
 
-        // Update URL params
         Object.entries(newSelectedAttributes).forEach(([key, values]) => {
             if (values.length > 0) {
                 urlSearchParams.set(`attr_${key}`, values.join(','))
@@ -101,102 +211,105 @@ const Filter = () => {
             }
         })
 
-        // Clean up removed attributes
-        for (const [key, value] of urlSearchParams.entries()) {
+        for (const [key] of urlSearchParams.entries()) {
             if (key.startsWith('attr_')) {
-                const attrKey = key.replace('attr_', '')
-                if (!newSelectedAttributes[attrKey]) {
-                    urlSearchParams.delete(key)
-                }
+                const k = key.replace('attr_', '')
+                if (!newSelectedAttributes[k]) urlSearchParams.delete(key)
             }
         }
 
         router.push(`${WEBSITE_SHOP}?${urlSearchParams}`)
     }
 
-    const handlePriceFilter = () => {
-        urlSearchParams.set('minPrice', priceFilter.minPrice)
-        urlSearchParams.set('maxPrice', priceFilter.maxPrice)
+    const handlePriceFilter = (minPrice, maxPrice) => {
+        urlSearchParams.set('minPrice', minPrice)
+        urlSearchParams.set('maxPrice', maxPrice)
         router.push(`${WEBSITE_SHOP}?${urlSearchParams}`)
     }
 
     return (
         <div>
-            {searchParams.size > 0 &&
-                <Button type="button" variant="destructive" className="w-full mb-4" asChild>
-                    <Link href={WEBSITE_SHOP}>
-                        Clear All Filters
-                    </Link>
+            {/* Clear all filters */}
+            {searchParams.size > 0 && (
+                <Button type="button" variant="destructive" className="w-full mb-6" asChild>
+                    <Link href={WEBSITE_SHOP}>Clear All Filters</Link>
                 </Button>
-            }
-            <Accordion type="multiple" defaultValue={['1', '2']}>
-                <AccordionItem value="1">
-                    <AccordionTrigger className="uppercase font-semibold hover:no-underline">Category</AccordionTrigger>
-                    <AccordionContent>
-                        <div className='max-h-48 overflow-auto'>
-                            <ul>
-                                {categoryData && categoryData.success && categoryData.data.map((category) => (
-                                    <li key={category._id} className='mb-3'>
-                                        <label className="flex items-center space-x-3 cursor-pointer">
-                                            <Checkbox
-                                                onCheckedChange={() => handleCategoryFilter(category.slug)}
-                                                checked={selectedCategory.includes(category.slug)}
-                                            />
-                                            <span>{category.name}</span>
-                                        </label>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
+            )}
 
-                {/* Dynamic Attribute Filters */}
-                {attributesData && attributesData.success && attributesData.data.map((attribute, index) => (
-                    <AccordionItem key={attribute.key} value={`attr-${index + 2}`}>
-                        <AccordionTrigger className="uppercase font-semibold hover:no-underline">
-                            {attribute.label}
-                        </AccordionTrigger>
-                        <AccordionContent>
-                            <div className='max-h-48 overflow-auto'>
-                                <ul>
-                                    {attribute.values.map((value) => (
-                                        <li key={value} className='mb-3'>
-                                            <label className="flex items-center space-x-3 cursor-pointer">
-                                                <Checkbox
-                                                    onCheckedChange={() => handleAttributeFilter(attribute.key, value)}
-                                                    checked={selectedAttributes[attribute.key]?.includes(value) || false}
-                                                />
-                                                <span>{value}</span>
-                                            </label>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                ))}
+            <div className="flex flex-col gap-y-8 md:gap-y-14">
 
-                <AccordionItem value="price">
-                    <AccordionTrigger className="uppercase font-semibold hover:no-underline">Price</AccordionTrigger>
-                    <AccordionContent>
-                        <Slider 
-                            defaultValue={[0, 100000]} 
-                            max={100000} 
-                            step={1000} 
-                            onValueChange={handlePriceChange} 
+                {/* Search + mobile close */}
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center border border-[var(--input-border)] focus-within:ring-1 focus-within:ring-[var(--input-focus)] transition">
+                        <input
+                            type="search"
+                            placeholder="Search products..."
+                            className="text-base ps-[var(--input-x-padding)] py-[var(--input-y-padding)] outline-none bg-transparent"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    urlSearchParams.set('q', e.target.value)
+                                    router.push(`${WEBSITE_SHOP}?${urlSearchParams}`)
+                                }
+                            }}
+                            defaultValue={searchParams.get('q') || ''}
                         />
-                        <div className='flex justify-between items-center pt-2'>
-                            <span>{priceFilter.minPrice.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}</span>
-                            <span>{priceFilter.maxPrice.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}</span>
-                        </div>
+                        <i className="fa-solid fa-magnifying-glass pe-[var(--input-x-padding)] text-[var(--text-gray)]" />
+                    </div>
+                    <div className="lg:hidden">
+                        <button type="button" onClick={onClose} className="cursor-pointer ms-3">
+                            <i className="fa-solid fa-xmark text-xl" />
+                        </button>
+                    </div>
+                </div>
 
-                        <div className='mt-4'>
-                            <ButtonLoading onClick={handlePriceFilter} type="button" text="Apply Price Filter" className="rounded-full" />
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
-            </Accordion>
+                {/* Attribute accordions */}
+                <div>
+                    <SectionHeading>Filter</SectionHeading>
+                    <div className="flex flex-col">
+
+                        {/* Category accordion */}
+                        <FilterAccordion label="Category">
+                            {categoryLoading && <div className="p-4 text-sm text-[var(--text-gray)] italic">Loading...</div>}
+                            {categoryData?.success && categoryData.data.length > 0 ? categoryData.data.map((category, i) => (
+                                <FilterCheckbox
+                                    key={category._id}
+                                    label={category.name}
+                                    checked={selectedCategory.includes(category.slug)}
+                                    onChange={() => handleCategoryFilter(category.slug)}
+                                    isFirst={i === 0}
+                                    isLast={i === categoryData.data.length - 1}
+                                />
+                            )) : !categoryLoading && <div className="p-4 text-sm text-[var(--text-gray)] italic">No categories found</div>}
+                        </FilterAccordion>
+
+                        {/* Dynamic attribute accordions */}
+                        {attributesLoading && <div className="p-4 text-sm text-[var(--text-gray)] italic px-4">Loading filters...</div>}
+                        {attributesData?.success && attributesData.data.map((attribute) => (
+                            <FilterAccordion key={attribute.key} label={attribute.label}>
+                                {attribute.values.map((value, i) => (
+                                    <FilterCheckbox
+                                        key={value}
+                                        label={value}
+                                        checked={selectedAttributes[attribute.key]?.includes(value) || false}
+                                        onChange={() => handleAttributeFilter(attribute.key, value)}
+                                        isFirst={i === 0}
+                                        isLast={i === attribute.values.length - 1}
+                                    />
+                                ))}
+                            </FilterAccordion>
+                        ))}
+
+                    </div>
+                </div>
+
+                {/* Price range */}
+                <PriceRange
+                    onApply={handlePriceFilter}
+                    initialMin={Number(searchParams.get('minPrice')) || 0}
+                    initialMax={Number(searchParams.get('maxPrice')) || 100000}
+                />
+
+            </div>
         </div>
     )
 }

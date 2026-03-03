@@ -4,41 +4,28 @@ import Sorting from '@/components/Application/Website/Sorting'
 import WebsiteBreadcrumb from '@/components/Application/Website/WebsiteBreadcrumb'
 import { WEBSITE_SHOP } from '@/routes/WebsiteRoute'
 import React, { useState } from 'react'
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from "@/components/ui/sheet"
-import useWindowSize from '@/hooks/useWindowSize'
 import axios from 'axios'
 import { useSearchParams } from 'next/navigation'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import ProductBox from '@/components/Application/Website/ProductBox'
 import ButtonLoading from '@/components/Application/ButtonLoading'
+
 const breadcrumb = {
     title: 'Shop',
     links: [
         { label: 'Shop', href: WEBSITE_SHOP }
     ]
 }
+
 const Shop = () => {
     const searchParams = useSearchParams().toString()
     const [limit, setLimit] = useState(9)
     const [sorting, setSorting] = useState('default_sorting')
     const [isMobileFilter, setIsMobileFilter] = useState(false)
-    const windowSize = useWindowSize()
-
 
     const fetchProduct = async (pageParam) => {
         const { data: getProduct } = await axios.get(`/api/shop?page=${pageParam}&limit=${limit}&sort=${sorting}&${searchParams}`)
-
-        if (!getProduct.success) {
-            return
-        }
-
+        if (!getProduct.success) return
         return getProduct.data
     }
 
@@ -46,75 +33,91 @@ const Shop = () => {
         queryKey: ['products', limit, sorting, searchParams],
         queryFn: async ({ pageParam }) => await fetchProduct(pageParam),
         initialPageParam: 0,
-        getNextPageParam: (lastPage) => {
-            return lastPage.nextPage
-        }
+        getNextPageParam: (lastPage) => lastPage.nextPage
     })
 
+    const totalProducts = data?.pages?.reduce((acc, page) => acc + (page?.products?.length || 0), 0) || 0
 
     return (
-        <div >
+        <div>
+            {/* Breadcrumb hero */}
             <WebsiteBreadcrumb props={breadcrumb} />
-            <section className='lg:flex lg:px-32 px-4 my-20'>
-                {windowSize.width > 1024 ?
 
-                    <div className='w-72 me-4'>
-                        <div className='sticky top-0 bg-gray-50 p-4 rounded'>
-                            <Filter />
-                        </div>
-                    </div>
-                    :
+            <section className="pb-24 px-3 lg:px-8  xl:px-0 bg-center bg-no-repeat bg-contain relative">
+                <div className="max-w-3xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto relative z-10">
+                    <div className="lg:flex">
 
-                    <Sheet open={isMobileFilter} onOpenChange={() => setIsMobileFilter(false)}>
-                        <SheetContent side='left' className="block">
-                            <SheetHeader className="border-b">
-                                <SheetTitle>Filter </SheetTitle>
-                            </SheetHeader>
-                            <div className='p-4 overflow-auto h-[calc(100vh-80px)]'>
-                                <Filter />
+                        {/* SIDEBAR — always visible on desktop, slide-in on mobile */}
+                        <div className="lg:w-4/12 xl:w-3/12 lg:pr-12">
+
+                            {/* Mobile: dark overlay */}
+                            <div
+                                onClick={() => setIsMobileFilter(false)}
+                                className={`fixed inset-0 bg-black/50 transition-opacity z-40 lg:hidden
+                                    ${isMobileFilter ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                            />
+                            
+
+                            {/* Panel: fixed+slide on mobile | static+always-visible on desktop */}
+                            <div className={`
+                                fixed top-0 left-0 h-full w-[85%] max-w-sm bg-white
+                                -translate-x-full transition-transform duration-300 z-50
+                                lg:static lg:translate-x-0 lg:w-full p-5 lg:p-0
+                                ${isMobileFilter ? 'translate-x-0' : '-translate-x-full'}
+                            `}>
+                                <Filter onClose={() => setIsMobileFilter(false)} />
                             </div>
-                        </SheetContent>
-                    </Sheet>
+                           
+                        </div>
+                              
+                        {/* PRODUCT AREA */}
+                        <div className="lg:w-8/12 xl:w-9/12 mt-8 lg:mt-0">
+                            <Sorting
+                                limit={limit}
+                                setLimit={setLimit}
+                                sorting={sorting}
+                                setSorting={setSorting}
+                                mobileFilterOpen={isMobileFilter}
+                                setMobileFilterOpen={setIsMobileFilter}
+                                totalProducts={totalProducts}
+                            />
 
-                }
+                            {isFetching && <div className="p-3 font-semibold text-center">Loading...</div>}
+                            {error && <div className="p-3 font-semibold text-center text-red-500">{error.message}</div>}
 
+                            {/* Grid — WOW delay passed per card */}
+                            <div className="grid gap-10 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 mt-0">
+                                {data?.pages?.map((page) =>
+                                    page?.products?.map((product, index) => (
+                                        <ProductBox
+                                            key={product._id}
+                                            product={product}
+                                            wowDelay={`${((index % 3) + 1) * 0.2}s`}
+                                        />
+                                    ))
+                                )}
+                            </div>
 
-                <div className='lg:w-[calc(100%-18rem)]'>
-                    <Sorting
-                        limit={limit}
-                        setLimit={setLimit}
-                        sorting={sorting}
-                        setSorting={setSorting}
-                        mobileFilterOpen={isMobileFilter}
-                        setMobileFilterOpen={setIsMobileFilter}
-                    />
+                            {/* Load more */}
+                            <div className="flex justify-center mt-14">
+                                {hasNextPage ? (
+                                    <ButtonLoading
+                                        type="button"
+                                        loading={isFetching}
+                                        text="Load More"
+                                        onClick={fetchNextPage}
+                                        className="cart-btn"
+                                    />
+                                ) : (
+                                    !isFetching && data && (
+                                        <span className="text-[var(--text-gray)]">No more data to load.</span>
+                                    )
+                                )}
+                            </div>
+                        </div>
 
-                    {isFetching && <div className='p-3 font-semibold text-center'>Loading...</div>}
-                    {error && <div className='p-3 font-semibold text-center'>{error.message}</div>}
-
-                    <div className='grid lg:grid-cols-3 grid-cols-2 lg:gap-10 gap-5 mt-10'>
-                        {data && data.pages.map(page => (
-                            page.products.map(product => (
-                                <ProductBox key={product._id} product={product} />
-                            ))
-                        ))}
                     </div>
-
-                    {/* load more button  */}
-
-                    <div className='flex justify-center mt-10'>
-                        {hasNextPage ?
-                            <ButtonLoading type="button" loading={isFetching} text="Load More" onClick={fetchNextPage} />
-                            :
-                            <>
-                                {!isFetching && <span>No more data to load.</span>}
-                            </>
-                        }
-                    </div>
-
                 </div>
-
-
             </section>
         </div>
     )
